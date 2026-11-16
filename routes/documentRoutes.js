@@ -1,9 +1,13 @@
 import express from "express";
-import db from "./../config/database.js";
+import db from "../config/database.js";
 import path from "path";
 
-import { UPLOAD_FIELDS } from "./../config/documentFields.js";
-import { upload } from "./../middleware/upload.js"
+import {
+  REQUIRED_DOCUMENTS,
+  UPLOAD_FIELDS
+} from "./../config/documentFields.js";
+
+import { upload } from "../middleware/upload.js"
 
 const router = express.Router();
 
@@ -101,6 +105,92 @@ router.post("/upload", upload.fields(UPLOAD_FIELDS),async (req, res) => {
   } catch(err) {
       console.log(err);
       res.status(500).send("Terjadi kesalahan pada server. Silakan coba beberapa saat lagi.");
+  }
+});
+
+// Read detaile document
+router.get("/read_data", async (req, res) => {
+  try {
+    const id = req.query.id;
+
+    if (typeof id === "undefined" || id === "") {
+      return res.status(400).send("ID data tidak valid.");
+      
+    } else {
+      const dataDb = (await db.query("SELECT * FROM upload_document WHERE id = $1", [id])).rows;
+      const targetData = dataDb[0]; 
+
+      if (!targetData) {
+        return res.status(404).send("Data yang anda cari tidak ditemukan!.");
+        
+      } else {
+        let uploaded_file = [];
+        const dbFiles = targetData.uploaded_files || targetData.uploaded_files;
+        if (dbFiles) {
+          try {
+            uploaded_file = typeof dbFiles === "string" ? JSON.parse(dbFiles) : dbFiles;
+          } catch (err) {
+            console.log("Gagal parse JSON dari DB, beralih ke pembacaan folder.");
+          }
+        }
+
+        let fields = {};
+
+        for (let i = 0; i < REQUIRED_DOCUMENTS.length; i++) {
+          const docName = REQUIRED_DOCUMENTS[i];
+
+          const foundFileName = uploaded_file.find(function(file) {
+            return file.startsWith(docName);
+          });
+          
+          let isUploaded = (foundFileName !== undefined);
+
+          if (isUploaded) {
+            fields[docName] = `<div class="custom-file">
+                                  <input type="file" class="custom-file-input" name="${docName}" id="doc_${i}" accept=".pdf,.doc,.docx,.xls,.xlsx" style="cursor: pointer;" />
+                                  <label class="custom-file-label text-truncate text-success" for="doc_${i}" id="label_doc_${i}" data-browse="🗙" style="padding-right: 50px; font-weight: 500;" >
+                                    ${foundFileName}
+                                  </label>
+                                  <button type="button" 
+                                      class="position-absolute h-100 d-flex align-items-center justify-content-center text-decoration-none text-secondary" 
+                                      style="right: 0; top: 0; width: 42px; z-index: 10; background-color: #e9ecef; border-left: 1px solid #ced4da; border-radius: 0 0.25rem 0.25rem 0; font-size: 16px; cursor: pointer; border: none;"
+                                      title="Hapus berkas ini"
+                                      data-toggle="modal" 
+                                      data-target="#modalDeleteConfirmation"
+                                      data-id="${id}"
+                                      data-filename="${foundFileName}">
+                                        🗙
+                                  </button>
+                               </div>
+                              <small class="form-text text-muted">Document has been saved, click <a href="/download_file?id=${id}&fileName=${foundFileName}" target="_blank" class="font-weight-bold text-primary"> here </a> to download this document.</small>`;
+          } else {
+            fields[docName] = `<div class="custom-file">
+                                  <input type="file" class="custom-file-input" name="${docName}" id="doc_${i}" accept=".pdf,.doc,.docx,.xls,.xlsx">
+                                  <label class="custom-file-label text-truncate text-muted" id="label_doc_${i}" for="doc_${i}" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
+                              </div>
+                              <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>`;
+          }
+        }
+
+        const formatCreateDate = targetData.created_at ? targetData.created_at.toString().slice(0, 33) : "-";
+        
+        let data = {
+          id: id,
+          institution: targetData.name, 
+          integration: targetData.api_name,
+          vaType: targetData.va_type,
+          create_date: formatCreateDate,
+          message: req.flash("success")[0] || "",
+          errorMessage: req.flash("error")[0] || "",
+          fields: fields
+        };
+
+        res.render("read_data.ejs", data);
+      }
+    }
+  } catch (err) {
+    console.error("Error pada rute read_data:", err);
+    res.status(500).send("Terjadi kesalahan pada sistem.");
   }
 });
 
