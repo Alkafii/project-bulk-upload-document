@@ -2,15 +2,6 @@ import express from "express";
 import bodyParser from "body-parser";
 import multer from "multer";
 import path from "path";
-import fs from "fs";
-import db from "./config/database.js"
-
-import { UPLOAD_FIELDS } from "./config/documentFields.js";
-
-import {
-  upload,
-  targetLocation
-} from "./middleware/upload.js"
 
 import {
   sessionMiddleware, 
