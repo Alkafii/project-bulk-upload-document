@@ -408,7 +408,7 @@
             const errorBox = $('#clientErrorBox');
             const errorText = $('#errorMessageText');
 
-            const MAX_FILE_SIZE = 2 * 1024 * 1024;
+            const MAX_FILE_SIZE = 10 * 1024 * 1024;
             const allowedExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx'];
 
             function toggleError(message = '') {
@@ -420,7 +420,7 @@
             function validateFile(file) {
             const ext = file.name.split('.').pop().toLowerCase();
             if (!allowedExtensions.includes(ext)) return 'Format file tidak didukung! Gunakan PDF, DOC, DOCX, XLS, atau XLSX.';
-            if (file.size > MAX_FILE_SIZE) return 'Ukuran file terlalu besar! Maksimal dokumen adalah 2 MB.';
+            if (file.size > MAX_FILE_SIZE) return 'Ukuran file terlalu besar! Maksimal dokumen adalah 10 MB.';
             return null;
             }
 
