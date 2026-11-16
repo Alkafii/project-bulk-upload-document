@@ -4,9 +4,8 @@ import fs from "fs";
 import { nanoid } from "nanoid";
 import db from "./../config/database.js";
 
-// Multer config
+
 const targetLocation = "./data/uploaded_file";
-// let sessionMessage = "";
 
 const storage = multer.diskStorage({
   destination: async function (req, file, cb) {
@@ -63,7 +62,6 @@ const storage = multer.diskStorage({
   }
 });
 
-// const upload = multer({ storage: storage });
 const fileFilter = (req, file, cb) => {
   const allowedMimes = [
     "application/pdf",

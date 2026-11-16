@@ -356,7 +356,7 @@
 
                 const dropArea = input.closest('.custom-file');
                 if (!dropArea) return;
-\
+
                 ['dragenter', 'dragover', 'dragleave', 'dragend'].forEach((evt) => {
                 dropArea.addEventListener(evt, (e) => {
                     e.preventDefault();

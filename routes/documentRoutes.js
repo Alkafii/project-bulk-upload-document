@@ -15,7 +15,7 @@ import {
 
 const router = express.Router();
 
-// Homepage
+
 router.get("/",async (req, res) => {
   try {
       const dataDb = (await db.query("SELECT * FROM upload_document ORDER BY id ASC")).rows;
@@ -66,7 +66,7 @@ router.get("/",async (req, res) => {
   }
 });
 
-// Upload document
+
 router.get("/upload", (req, res) => {
   try {
       res.render("upload.ejs", { message: req.flash("success")[0] || "", errorMessage: req.flash("error")[0] || "", });
@@ -112,7 +112,7 @@ router.post("/upload", upload.fields(UPLOAD_FIELDS),async (req, res) => {
   }
 });
 
-// Read detaile document
+
 router.get("/read_data", async (req, res) => {
   try {
     const id = req.query.id;
@@ -198,7 +198,7 @@ router.get("/read_data", async (req, res) => {
   }
 });
 
-// Delete file
+
 router.get("/delete_file", async (req, res) => {
   try {
     const id = req.query.id;
@@ -269,7 +269,7 @@ router.get("/delete_file", async (req, res) => {
   }
 });
 
-// Update decument
+
 router.post("/update_data", upload.fields(UPLOAD_FIELDS), async (req, res) => {
   try {
     const id = req.query.id;
@@ -338,7 +338,7 @@ router.post("/update_data", upload.fields(UPLOAD_FIELDS), async (req, res) => {
   }
 });
 
-// Download document
+
 router.get("/download_file", async (req, res) => {
   try {
     const id = req.query.id;
@@ -424,7 +424,7 @@ router.get("/download_file", async (req, res) => {
   }
 });
 
-// Delete integration
+
 router.get("/delete", async (req, res) => {
   try{
     const id = req.query.id;
@@ -477,7 +477,6 @@ router.get("/delete", async (req, res) => {
     res.status(500).send("Terjadi kesalahan sistem pada route /delete.");
   }
 });
-
 
 
 
