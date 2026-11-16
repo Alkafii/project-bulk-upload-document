@@ -3,27 +3,18 @@ import bodyParser from "body-parser";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import pg from "pg";
-import env from "dotenv";
 import { nanoid } from "nanoid";
 import session from "express-session";
 import flash from "connect-flash";
 import connectPgSimple from "connect-pg-simple";
-
-env.config();
+import db from "./config/database.js"
+import {
+  REQUIRED_DOCUMENTS,
+  UPLOAD_FIELDS
+} from "./config/documentFields.js";
 
 const app = express();
 const port = 3000;
-
-
-// Database connection
-const db = new pg.Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_DATABASE,
-  password: process.env.DB_PASSWORD,
-  port: Number(process.env.DB_PORT),
-});
 
 
 // Session dan flash
@@ -206,42 +197,7 @@ app.get("/upload", (req, res) => {
   }
 })
 
-app.post("/upload", upload.fields([
-  { name: "Form_Pendaftaran_API", maxCount: 1 },
-  { name: "Memo_Bisnis", maxCount: 1 },
-  { name: "BRD", maxCount: 1 },
-  { name: "Form_Deployment", maxCount: 1 },
-  { name: "Outline_SIT", maxCount: 1 },
-  { name: "BA_UAT", maxCount: 1 },
-  { name: "Memo_IT", maxCount: 1 },
-  { name: "Surat_Permohonan_Verifikasi", maxCount: 1 },
-  { name: "Surat_Kebenaran", maxCount: 1 },
-  { name: "Surat_Kesesuaian", maxCount: 1 },
-  { name: "Matriks_Penjelasan_SOP", maxCount: 1 },
-  { name: "SOP_Penyedia", maxCount: 1 },
-  { name: "24 - API Virtual Account - Inquiry - Positif", maxCount: 1 },
-  { name: "24 - API Virtual Account - Inquiry - Negatif", maxCount: 1 },
-  { name: "25 - API Virtual Account - Payment - Positif", maxCount: 1 },
-  { name: "25 - API Virtual Account - Payment - Negatif", maxCount: 1 },
-  { name: "26 - API Virtual Account - Inquiry Status - Positif", maxCount: 1 },
-  { name: "26 - API Virtual Account - Inquiry Status - Negatif", maxCount: 1 },
-  { name: "27 - API Virtual Account - Create VA - Positif", maxCount: 1 },
-  { name: "27 - API Virtual Account - Create VA - Negatif", maxCount: 1 },
-  { name: "30 - API Virtual Account - Inquiry VA - Positif", maxCount: 1 },
-  { name: "30 - API Virtual Account - Inquiry VA - Negatif", maxCount: 1 },
-  { name: "28 - API Virtual Account - Update VA - Positif", maxCount: 1 },
-  { name: "28 - API Virtual Account - Update VA - Negatif", maxCount: 1 },
-  { name: "25 - API Virtual Account - Payment VA - Positif", maxCount: 1 },
-  { name: "25 - API Virtual Account - Payment VA - Negatif", maxCount: 1 },
-  { name: "47 - API Generate QR MPM - Positif", maxCount: 1 },
-  { name: "47 - API Generate QR MPM - Negatif", maxCount: 1 },
-  { name: "51 - API Query Payment - Positif", maxCount: 1 },
-  { name: "51 - API Query Payment - Negatif", maxCount: 1 },
-  { name: "52 - API Payment Notification - Positif", maxCount: 1 },
-  { name: "52 - API Payment Notification - Negatif", maxCount: 1 },
-  { name: "BA_Uji_Fungsi", maxCount: 1 },
-  { name: "Hasil_Uji_Fungsi", maxCount: 1 }
-]),async (req, res) => {
+app.post("/upload", upload.fields(UPLOAD_FIELDS),async (req, res) => {
   try {
       if (!req.files || Object.keys(req.files).length === 0) {
         req.flash("error", "Anda belum upload dokumen!")
@@ -454,42 +410,7 @@ app.get("/delete_file", async (req, res) => {
 
 
 // Update decument
-app.post("/update_data", upload.fields([
-  { name: "Form_Pendaftaran_API", maxCount: 1 },
-  { name: "Memo_Bisnis", maxCount: 1 },
-  { name: "BRD", maxCount: 1 },
-  { name: "Form_Deployment", maxCount: 1 },
-  { name: "Outline_SIT", maxCount: 1 },
-  { name: "BA_UAT", maxCount: 1 },
-  { name: "Memo_IT", maxCount: 1 },
-  { name: "Surat_Permohonan_Verifikasi", maxCount: 1 },
-  { name: "Surat_Kebenaran", maxCount: 1 },
-  { name: "Surat_Kesesuaian", maxCount: 1 },
-  { name: "Matriks_Penjelasan_SOP", maxCount: 1 },
-  { name: "SOP_Penyedia", maxCount: 1 },
-  { name: "24 - API Virtual Account - Inquiry - Positif", maxCount: 1 },
-  { name: "24 - API Virtual Account - Inquiry - Negatif", maxCount: 1 },
-  { name: "25 - API Virtual Account - Payment - Positif", maxCount: 1 },
-  { name: "25 - API Virtual Account - Payment - Negatif", maxCount: 1 },
-  { name: "26 - API Virtual Account - Inquiry Status - Positif", maxCount: 1 },
-  { name: "26 - API Virtual Account - Inquiry Status - Negatif", maxCount: 1 },
-  { name: "27 - API Virtual Account - Create VA - Positif", maxCount: 1 },
-  { name: "27 - API Virtual Account - Create VA - Negatif", maxCount: 1 },
-  { name: "30 - API Virtual Account - Inquiry VA - Positif", maxCount: 1 },
-  { name: "30 - API Virtual Account - Inquiry VA - Negatif", maxCount: 1 },
-  { name: "28 - API Virtual Account - Update VA - Positif", maxCount: 1 },
-  { name: "28 - API Virtual Account - Update VA - Negatif", maxCount: 1 },
-  { name: "25 - API Virtual Account - Payment VA - Positif", maxCount: 1 },
-  { name: "25 - API Virtual Account - Payment VA - Negatif", maxCount: 1 },
-  { name: "47 - API Generate QR MPM - Positif", maxCount: 1 },
-  { name: "47 - API Generate QR MPM - Negatif", maxCount: 1 },
-  { name: "51 - API Query Payment - Positif", maxCount: 1 },
-  { name: "51 - API Query Payment - Negatif", maxCount: 1 },
-  { name: "52 - API Payment Notification - Positif", maxCount: 1 },
-  { name: "52 - API Payment Notification - Negatif", maxCount: 1 },
-  { name: "BA_Uji_Fungsi", maxCount: 1 },
-  { name: "Hasil_Uji_Fungsi", maxCount: 1 }
-]), async (req, res) => {
+app.post("/update_data", upload.fields(UPLOAD_FIELDS), async (req, res) => {
   try {
     const id = req.query.id;
     if (!id || id === "") {
