@@ -1,6 +1,6 @@
 import express from "express";
 import bodyParser from "body-parser";
-
+import multer from "multer";
 import path from "path";
 import fs from "fs";
 
@@ -20,6 +20,8 @@ import {
   flashMiddleware
 } from "./middleware/session.js";
 
+import documentRoutes from "./routes/documentReoutes.js";
+
 const app = express();
 const port = 3000;
 
@@ -30,68 +32,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(sessionMiddleware);
 app.use(flashMiddleware);
 
+app.use(documentRoutes);
 
-// Homepage
-app.get("/",async (req, res) => {
-  try {
-      const dataDb = (await db.query("SELECT * FROM upload_document ORDER BY id ASC")).rows;
-      let tableData = "";
-
-      let data = {
-        institution: "",
-        integration: "",
-        create_date: "",
-        rowData: "",
-        message: req.flash("success")[0] || ""
-      };
-
-      if(dataDb.length > 0) {
-        for(let i = 0; i < dataDb.length; i++) {
-          const totalDocument = dataDb[i];
-          const targetDocument = (totalDocument.va_type === "Off Us" || totalDocument.api_name === "QRIS MPM SNAP") ? 20 : 22;
-          const filesArray = typeof totalDocument.uploaded_files === "string" ? JSON.parse(totalDocument.uploaded_files) : (totalDocument.uploaded_files || []);
-          tableData += `<div class="row no-gutters p-3 text-center align-items-center bg-white border-bottom">
-                          <div class="col-1 text-left pl-3 font-weight-bold text-muted">${i + 1}</div>
-                          <div class="col-3 text-left font-weight-bold text-dark">${dataDb[i].name}</div>
-                          <div class="col-2 text-left text-monospace text-secondary">${dataDb[i].api_name} ${dataDb[i].va_type}</div>
-                          <div class="col-2 text-left">${dataDb[i].created_at}</div>
-                          <div class="col-2 text-left">${dataDb[i].updated_at}</div>
-                          <div class="col-1 text-center"><b>${filesArray.length}</b>/${targetDocument}</div>
-                          <div class="col-1 dropdown">
-                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle py-0" type="button" id="dropdownMenuButton${i}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                Edit
-                            </button>
-                            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenu2">
-                              <a class="dropdown-item" href="/read_data?id=${dataDb[i].id}">Update</a>
-                              <button type="button" class="dropdown-item text-danger" data-toggle="modal" data-target="#deleteModal" data-id="${dataDb[i].id}" data-name="${dataDb[i].name}">
-                                Delete
-                              </button>
-                            </div>
-                          </div>
-                        </div>`;
-        }
-        data.rowData = tableData;
-      } else {
-        data.rowData = `<div class="row no-gutters p-4 text-center bg-white text-muted justify-content-center">Belum ada data integrasi API.</div>`;
-      }
-
-      res.render("index.ejs", data);
-  } catch(err) {
-      console.log(err);
-      res.status(500).send("Terjadi kesalahan pada server. Silakan coba beberapa saat lagi.");
-  }
-});
-
-
-// Upload document
-app.get("/upload", (req, res) => {
-  try {
-      res.render("upload.ejs", { message: req.flash("success")[0] || "", errorMessage: req.flash("error")[0] || "", });
-  } catch(err) {
-      console.log(err);
-      res.status(500).send("Terjadi kesalahan pada server. Silakan coba beberapa saat lagi.");
-  }
-})
 
 app.post("/upload", upload.fields(UPLOAD_FIELDS),async (req, res) => {
   try {
