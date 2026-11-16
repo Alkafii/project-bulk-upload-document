@@ -8,7 +8,10 @@ import {
   UPLOAD_FIELDS
 } from "./../config/documentFields.js";
 
-import { upload } from "../middleware/upload.js";
+import { 
+  upload, 
+  targetLocation
+} from "../middleware/upload.js";
 
 const router = express.Router();
 
