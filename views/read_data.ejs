@@ -16,20 +16,19 @@
                 <p class="mb-1">Integrasi dengan Mitra <%= institution %> menggunakan API <%= integration %> <%= vaType %>, data dibuat pada <%= create_date %></p>
 
                 <% if (message) { %>
-                    <div class="alert alert-success w-100 text-center mb-4 shadow-sm" style="max-width: 1000px;" role="alert">
+                    <div class="alert alert-success alert-dismissible fade show w-100 text-center mb-4 shadow-sm" style="max-width: 1000px;" role="alert">
                         <strong><%= message %></strong>
-                        <button type="button" class="close" aria-label="Close" onclick="hideErrorMessage()" style="outline: none; padding-bottom: 5px;">
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close" style="outline: none; padding-bottom: 5px;">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
                 <% } %>
-                <div id="clientErrorBox" class="alert alert-danger p-2 text-center alert-dismissible fade show <%= errorMessage ? "" : "d-none" %>" role="alert">
-                    <small id="errorMessageText"><%= errorMessage || "" %></small>
-                    <button type="button" class="close" aria-label="Close" onclick="hideErrorMessage()" style="outline: none;">
+                <div id="clientErrorBox" class="alert alert-danger alert-dismissible fade show w-100 text-center mb-4 shadow-sm <%= errorMessage ? '' : 'd-none' %>" style="max-width: 1000px;" role="alert">
+                    <strong id="errorMessageText"><%= errorMessage || "" %></strong>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close" style="outline: none; padding-bottom: 5px;">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-
                 <hr class="mb-4">
                 <div class="mb-3">
                     <label>Name of institution<label class="font-weight-bold text-danger">*</label></label>

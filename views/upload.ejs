@@ -15,12 +15,12 @@
                 <h3 class="text-primary text-uppercase font-weight-bold mt-3 text-left">Upload Dokumen</h3>
                 <p class="mb-1">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque vel elementum nibh.</p>
 
-                    <div id="clientErrorBox" class="alert alert-danger p-2 text-center alert-dismissible fade show <%= !errorMessage ? 'd-none' : '' %>" role="alert">
-                        <small id="errorMessageText"><%= errorMessage || '' %></small>
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close" style="outline: none;">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
+                <div id="clientErrorBox" class="alert alert-danger alert-dismissible fade show w-100 text-center mb-4 shadow-sm <%= errorMessage ? '' : 'd-none' %>" style="max-width: 1000px;" role="alert">
+                    <strong id="errorMessageText"><%= errorMessage || "" %></strong>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close" style="outline: none; padding-bottom: 5px;">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
 
                 <hr class="mb-4">
                 <div class="mb-3">
