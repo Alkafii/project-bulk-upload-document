@@ -1,7 +1,6 @@
 import "dotenv/config";
 import pg from "pg";
 
-// Database connection
 const db = new pg.Pool({
   user: process.env.DB_USER,
   host: process.env.DB_HOST,

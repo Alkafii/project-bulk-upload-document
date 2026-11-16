@@ -12,6 +12,7 @@ import {
   upload, 
   targetLocation
 } from "../middleware/upload.js";
+import { MAX_MB, MAX_FILE_SIZE, MAX_FILE_SIZE_MB } from "../config/uploadConfig.js";
 
 const router = express.Router();
 
@@ -69,7 +70,14 @@ router.get("/",async (req, res) => {
 
 router.get("/upload", (req, res) => {
   try {
-      res.render("upload.ejs", { message: req.flash("success")[0] || "", errorMessage: req.flash("error")[0] || "", });
+      res.render("upload.ejs", { 
+        message: req.flash("success")[0] || "", 
+        errorMessage: req.flash("error")[0] || "", 
+
+        maxMB: MAX_MB,
+        maxFileSize: MAX_FILE_SIZE,
+        maxFileSizeMB: MAX_FILE_SIZE_MB
+      });
   } catch(err) {
       console.log(err);
       res.status(500).send("Terjadi kesalahan pada server. Silakan coba beberapa saat lagi.");
@@ -186,7 +194,11 @@ router.get("/read_data", async (req, res) => {
           create_date: formatCreateDate,
           message: req.flash("success")[0] || "",
           errorMessage: req.flash("error")[0] || "",
-          fields: fields
+          fields: fields,
+
+          maxMB: MAX_MB,
+          maxFileSize: MAX_FILE_SIZE,
+          maxFileSizeMB: MAX_FILE_SIZE_MB
         };
 
         res.render("read_data.ejs", data);

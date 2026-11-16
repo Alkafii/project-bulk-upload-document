@@ -286,11 +286,11 @@
             const errorBox = document.getElementById('clientErrorBox');
             const errorText = document.getElementById('errorMessageText');
 
-            const MAX_FILE_SIZE = 10 * 1024 * 1024;
+            const MAX_MB = Number("<%= maxMB %>");
+            const MAX_FILE_SIZE = Number("<%= maxFileSize %>");
             const ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'xls', 'xlsx'];
             const fileInputs = Array.from(document.querySelectorAll('.custom-file-input'));
 
-            // Simpan label awal (termasuk nama file lama dari EJS)
             const originalLabels = new Map(
                 fileInputs.map((input) => [input, document.getElementById(`label_${input.id}`)?.textContent.trim() || 'Choose file'])
             );
@@ -306,7 +306,7 @@
             function validateFile(file) {
                 const ext = file.name.includes('.') ? file.name.split('.').pop().toLowerCase() : '';
                 if (!ALLOWED_EXTENSIONS.includes(ext)) return 'Format file tidak didukung! Gunakan PDF, DOC, DOCX, XLS, atau XLSX.';
-                if (file.size > MAX_FILE_SIZE) return 'Ukuran file terlalu besar! Maksimal dokumen adalah 10 MB.';
+                if (file.size > MAX_FILE_SIZE) return `Ukuran file terlalu besar! Maksimal dokumen adalah ${MAX_MB} MB.`;
                 return null;
             }
 

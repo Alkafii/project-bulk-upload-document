@@ -3,6 +3,7 @@ import path from "path";
 import fs from "fs";
 import { nanoid } from "nanoid";
 import db from "./../config/database.js";
+import { MAX_FILE_SIZE } from "../config/uploadConfig.js";
 
 
 const targetLocation = "./data/uploaded_file";
@@ -85,7 +86,7 @@ const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 10 * 1024 * 1024
+    fileSize: MAX_FILE_SIZE
   }
 });
 

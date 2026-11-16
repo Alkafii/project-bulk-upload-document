@@ -8,6 +8,7 @@ import {
 } from "./middleware/session.js";
 
 import documentRoutes from "./routes/documentRoutes.js";
+import { MAX_MB, MAX_FILE_SIZE, MAX_FILE_SIZE_MB } from "./config/uploadConfig.js";
 
 const app = express();
 const port = 3000;
@@ -26,13 +27,13 @@ app.use((err, req, res, next) => {
   console.error('Upload error:', err);
 
   const isUpdateRequest = req.path === '/update_data';
+  const maxMB = MAX_MB;
 
-  const redirectUrl =
-    isUpdateRequest && req.query.id ? `/read_data?id=${encodeURIComponent(req.query.id)}` : '/upload';
+  const redirectUrl = isUpdateRequest && req.query.id ? `/read_data?id=${encodeURIComponent(req.query.id)}` : '/upload';
 
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
-      req.flash('error', 'Ukuran file terlalu besar! Maksimal dokumen adalah 10 MB.');
+      req.flash('error', `Ukuran file terlalu besar! Maksimal dokumen adalah ${maxMB} MB.`);
     } else if (err.code === 'LIMIT_UNEXPECTED_FILE') {
       req.flash('error', 'Kolom unggah dokumen tidak dikenali atau jumlah file melebihi batas.');
     } else {
