@@ -1,5 +1,9 @@
 import express from "express";
 import db from "./../config/database.js";
+import path from "path";
+
+import { UPLOAD_FIELDS } from "./../config/documentFields.js";
+import { upload } from "./../middleware/upload.js"
 
 const router = express.Router();
 
@@ -63,5 +67,41 @@ router.get("/upload", (req, res) => {
       res.status(500).send("Terjadi kesalahan pada server. Silakan coba beberapa saat lagi.");
   }
 })
+
+router.post("/upload", upload.fields(UPLOAD_FIELDS),async (req, res) => {
+  try {
+      if (!req.files || Object.keys(req.files).length === 0) {
+        req.flash("error", "Anda belum upload dokumen!")
+        return res.redirect("/upload");
+      }
+
+      const institution = req.body.institutionName || "Unknown";
+      let integration = req.body.integrationType || "General";
+      const vaType = req.body.vaType || " ";
+      const date = new Date().toLocaleString('sv-SE');
+
+      const uploadedDocuments = [];
+      let folderName = "Unknown-Folder";
+
+      for (const fieldName in req.files) {
+        const fileObject = req.files[fieldName][0]; 
+        const filenameWithExt = fileObject.filename; 
+        
+        uploadedDocuments.push(filenameWithExt);
+
+        if (folderName === "Unknown-Folder" && fileObject.destination) {
+          folderName = path.basename(fileObject.destination);
+        }
+      }
+  
+      await db.query("INSERT INTO upload_document (name, api_name, va_type, folder_name, created_at, updated_at, uploaded_files) VALUES ($1, $2, $3, $4, $5, $6, $7)", [institution, integration, vaType, folderName, date, date, JSON.stringify(uploadedDocuments)]);
+
+      req.flash("success", "Dokumen berhasil diupload");
+      return res.redirect("/");
+  } catch(err) {
+      console.log(err);
+      res.status(500).send("Terjadi kesalahan pada server. Silakan coba beberapa saat lagi.");
+  }
+});
 
 export default router;
