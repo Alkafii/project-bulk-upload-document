@@ -8,7 +8,7 @@ import {
 } from "./middleware/session.js";
 
 import documentRoutes from "./routes/documentRoutes.js";
-import { MAX_MB, MAX_FILE_SIZE, MAX_FILE_SIZE_MB } from "./config/uploadConfig.js";
+import { MAX_MB } from "./config/uploadConfig.js";
 
 const app = express();
 const port = 3000;
