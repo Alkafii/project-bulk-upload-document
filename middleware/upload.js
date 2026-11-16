@@ -69,7 +69,7 @@ const fileFilter = (req, file, cb) => {
     "application/pdf",
     "application/msword",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "application/vnd.ms-excel", // .xls
+    "application/vnd.ms-excel",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
   ];
 
@@ -77,7 +77,7 @@ const fileFilter = (req, file, cb) => {
   const ext = path.extname(file.originalname).toLowerCase();
 
   if (allowedMimes.includes(file.mimetype) && allowedExts.includes(ext)) {
-    cb(null, true); // File diterima
+    cb(null, true);
   } else {
     cb(new Error("Format file tidak valid! Hanya diperbolehkan PDF, Word, dan Excel."), false);
   }
@@ -87,7 +87,7 @@ const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 2 * 1024 * 1024
+    fileSize: 10 * 1024 * 1024
   }
 });
 

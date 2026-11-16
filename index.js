@@ -32,7 +32,7 @@ app.use((err, req, res, next) => {
 
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
-      req.flash('error', 'Ukuran file terlalu besar! Maksimal dokumen adalah 2 MB.');
+      req.flash('error', 'Ukuran file terlalu besar! Maksimal dokumen adalah 10 MB.');
     } else if (err.code === 'LIMIT_UNEXPECTED_FILE') {
       req.flash('error', 'Kolom unggah dokumen tidak dikenali atau jumlah file melebihi batas.');
     } else {
