@@ -1,138 +1,34 @@
 import express from "express";
 import bodyParser from "body-parser";
-import multer from "multer";
+
 import path from "path";
 import fs from "fs";
-import { nanoid } from "nanoid";
-import session from "express-session";
-import flash from "connect-flash";
-import connectPgSimple from "connect-pg-simple";
+
 import db from "./config/database.js"
 import {
   REQUIRED_DOCUMENTS,
   UPLOAD_FIELDS
 } from "./config/documentFields.js";
 
+import {
+  upload,
+  targetLocation
+} from "./middleware/upload.js"
+
+import {
+  sessionMiddleware, 
+  flashMiddleware
+} from "./middleware/session.js";
+
 const app = express();
 const port = 3000;
 
-
-// Session dan flash
-const PgSession = connectPgSimple(session);
-
-const sessionMiddleware = session({
-  store: new PgSession({
-    pool: db,
-    tableName: "user_sessions",
-    createTableIfMissing: true,
-  }),
-
-  secret: process.env.SESSION_SECRET,
-
-  resave: false,
-  saveUninitialized: false,
-
-  cookie: {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 1000 * 60 * 60 * 24,
-  },
-});
 
 app.use(express.static("public"));
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use(sessionMiddleware);
-app.use(flash());
-
-// Multer config
-const targetLocation = "./data/uploaded_file";
-// let sessionMessage = "";
-
-const storage = multer.diskStorage({
-  destination: async function (req, file, cb) {
-    try {
-      if (!req.customFolderPath) {
-        const id = req.query.id;
-
-        if (id) {
-          const dataDb = (await db.query("SELECT folder_name FROM upload_document WHERE id = $1", [id])).rows;
-          if (dataDb.length > 0 && dataDb[0].folder_name) {
-            req.customFolderPath = path.join(targetLocation, dataDb[0].folder_name);
-          }
-        }
-
-        if (!req.customFolderPath) {
-          const institution = req.body.institutionName || "Unknown";
-          const integration = req.body.integrationType || "General";
-          const vaType = req.body.vaType || " ";
-          const nanoId = nanoid(10);
-
-          const customFolderName = `${institution}-${integration} ${vaType}-${nanoId}`;
-          req.customFolderPath = path.join(targetLocation, customFolderName);
-        }
-      }
-
-      if (!fs.existsSync(req.customFolderPath)) {
-          fs.mkdirSync(req.customFolderPath, { recursive: true });
-      }
-
-      cb(null, req.customFolderPath);
-    } catch(err) {
-        console.log(err);
-        cb(err);
-    }  
-  },
-  filename: function (req, file, cb) {
-    try {  
-        const uniqueSuffix = Date.now();      
-        const ext = path.extname(file.originalname);
-        const newFileName = `${file.fieldname}-${uniqueSuffix}${ext}`;
-        
-        const folderNameOnly = path.basename(req.customFolderPath);
-        const databaseSavePath = `${folderNameOnly}/${newFileName}`;
-        
-        if (!req.uploadedPaths) req.uploadedPaths = [];
-        req.uploadedPaths.push(databaseSavePath);
-
-        cb(null, newFileName);
-
-    } catch(err) {
-        console.log(err);
-        cb(err);
-    }
-  }
-});
-
-// const upload = multer({ storage: storage });
-const fileFilter = (req, file, cb) => {
-  const allowedMimes = [
-    "application/pdf",
-    "application/msword",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "application/vnd.ms-excel", // .xls
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-  ];
-
-  const allowedExts = [".pdf", ".doc", ".docx", ".xls", ".xlsx"];
-  const ext = path.extname(file.originalname).toLowerCase();
-
-  if (allowedMimes.includes(file.mimetype) && allowedExts.includes(ext)) {
-    cb(null, true); // File diterima
-  } else {
-    cb(new Error("Format file tidak valid! Hanya diperbolehkan PDF, Word, dan Excel."), false);
-  }
-};
-
-const upload = multer({ 
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: {
-    fileSize: 2 * 1024 * 1024
-  }
-});
-
+app.use(flashMiddleware);
 
 
 // Homepage
@@ -259,21 +155,6 @@ app.get("/read_data", async (req, res) => {
             console.log("Gagal parse JSON dari DB, beralih ke pembacaan folder.");
           }
         }
-        
-        const REQUIRED_DOCUMENTS = [
-          "Form_Pendaftaran_API", "Memo_Bisnis", "BRD", "Form_Deployment", "Outline_SIT", "BA_UAT", "Memo_IT",
-          "Surat_Permohonan_Verifikasi", "Surat_Kebenaran", "Surat_Kesesuaian", "Matriks_Penjelasan_SOP", "SOP_Penyedia",
-          "24 - API Virtual Account - Inquiry - Positif", "24 - API Virtual Account - Inquiry - Negatif",
-          "25 - API Virtual Account - Payment - Positif", "25 - API Virtual Account - Payment - Negatif",
-          "26 - API Virtual Account - Inquiry Status - Positif", "26 - API Virtual Account - Inquiry Status - Negatif",
-          "27 - API Virtual Account - Create VA - Positif", "27 - API Virtual Account - Create VA - Negatif",
-          "30 - API Virtual Account - Inquiry VA - Positif", "30 - API Virtual Account - Inquiry VA - Negatif",
-          "28 - API Virtual Account - Update VA - Positif", "28 - API Virtual Account - Update VA - Negatif",
-          "25 - API Virtual Account - Payment VA - Positif", "25 - API Virtual Account - Payment VA - Negatif",
-          "47 - API Generate QR MPM - Positif", "47 - API Generate QR MPM - Negatif", "51 - API Query Payment - Positif",
-          "51 - API Query Payment - Negatif", "52 - API Payment Notification - Positif", "52 - API Payment Notification - Negatif",
-          "BA_Uji_Fungsi", "Hasil_Uji_Fungsi"
-        ];
 
         let fields = {};
 
@@ -649,7 +530,6 @@ app.use((err, req, res, next) => {
 
   next(err);
 });
-
 
 app.listen(port, () => {
   console.log(`Server berjalan di http://localhost:${port}`);
