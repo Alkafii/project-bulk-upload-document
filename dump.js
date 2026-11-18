@@ -1,13 +1,55 @@
-D:\18. Belajar Programming\Latihan Programming\Project Upload FIle\node_modules\connect-flash\lib\flash.js:19
-    if (req.flash && safe) { return next(); }
-            ^
+<div class="form-row mb-3">
 
-TypeError: Cannot read properties of undefined (reading 'flash')
-    at D:\18. Belajar Programming\Latihan Programming\Project Upload FIle\node_modules\connect-flash\lib\flash.js:19:13
-    at file:///D:/18.%20Belajar%20Programming/Latihan%20Programming/Project%20Upload%20FIle/index.js:32:9
-    at ModuleJob.run (node:internal/modules/esm/module_job:569:25)
-    at async node:internal/modules/esm/loader:650:26
-    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+    <div class="form-group col-md-6 mb-0 pr-3">
+        <label>Form Pendaftaran API</label>
 
-Node.js v26.8.2
-[nodemon] app crashed - waiting for file changes before starting...
+        <div class="custom-file">
+            <input
+                type="file"
+                class="custom-file-input"
+                name="Form_Pendaftaran_API"
+                id="dokumen"
+                accept=".pdf,.doc,.docx,.xls,.xlsx"
+            >
+            <label
+                class="custom-file-label text-truncate"
+                for="dokumen"
+                data-browse="🗀"
+                style="padding-right: 50px;"
+            >
+                Choose file
+            </label>
+        </div>
+
+        <small class="form-text text-muted">
+            File formats: PDF, DOCX, XLSX.
+        </small>
+    </div>
+
+    <div class="form-group col-md-6 mb-0 pl-3">
+        <label>Memo Bisnis</label>
+
+        <div class="custom-file">
+            <input
+                type="file"
+                class="custom-file-input"
+                name="Memo_Bisnis"
+                id="dokumen"
+                accept=".pdf,.doc,.docx,.xls,.xlsx"
+            >
+            <label
+                class="custom-file-label text-truncate"
+                for="dokumen"
+                data-browse="🗀"
+                style="padding-right: 50px;"
+            >
+                Choose file
+            </label>
+        </div>
+
+        <small class="form-text text-muted">
+            File formats: PDF, DOCX, XLSX.
+        </small>
+    </div>
+
+</div>
