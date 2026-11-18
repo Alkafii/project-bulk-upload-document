@@ -7,8 +7,9 @@ import {
   flashMiddleware
 } from "./middleware/session.js";
 
-import documentRoutes from "./routes/documentRoutes.js";
-import { MAX_MB, MAX_FILE_SIZE, MAX_FILE_SIZE_MB } from "./config/uploadConfig.js";
+import documentRoutes from "./routes/routes.js";
+
+import { MAX_MB } from "./config/uploadConfig.js";
 
 const app = express();
 const port = 3000;
@@ -18,6 +19,7 @@ app.use(express.static("public"));
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use(sessionMiddleware);
+
 app.use(flashMiddleware);
 
 app.use(documentRoutes);
@@ -26,7 +28,7 @@ app.use(documentRoutes);
 app.use((err, req, res, next) => {
   console.error('Upload error:', err);
 
-  const isUpdateRequest = req.path === '/update_data';
+  const isUpdateRequest = req.originalUrl.includes === '/update_data';
   const maxMB = MAX_MB;
 
   const redirectUrl = isUpdateRequest && req.query.id ? `/read_data?id=${encodeURIComponent(req.query.id)}` : '/upload';
@@ -46,6 +48,11 @@ app.use((err, req, res, next) => {
   if (err.message === 'Format file tidak valid! Hanya diperbolehkan PDF, Word, dan Excel.') {
     req.flash('error', 'Format file tidak didukung! Gunakan PDF, DOC, DOCX, XLS, atau XLSX.');
 
+    return res.redirect(redirectUrl);
+  }
+
+  if (!res.headersSent) {
+    req.flash('error', err.message || 'Terjadi kesalahan pada server.');
     return res.redirect(redirectUrl);
   }
 

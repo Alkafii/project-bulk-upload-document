@@ -306,7 +306,7 @@
             function validateFile(file) {
                 const ext = file.name.includes('.') ? file.name.split('.').pop().toLowerCase() : '';
                 if (!ALLOWED_EXTENSIONS.includes(ext)) return 'Format file tidak didukung! Gunakan PDF, DOC, DOCX, XLS, atau XLSX.';
-                if (file.size > MAX_FILE_SIZE) return `Ukuran file terlalu besar! Maksimal dokumen adalah ${MAX_MB} MB.`;
+                if (file.size > MAX_FILE_SIZE) return `Ukuran file terlalu besar! Ukuran maksimal adalah ${MAX_MB} MB.`;
                 return null;
             }
 

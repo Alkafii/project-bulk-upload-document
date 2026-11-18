@@ -2,22 +2,24 @@ import express from "express";
 import db from "../config/database.js";
 import path from "path";
 import fs from "fs";
+import bcrypt from "bcrypt";
 
 import {
   REQUIRED_DOCUMENTS,
   UPLOAD_FIELDS
-} from "./../config/documentFields.js";
+} from "../config/documentFields.js";
 
 import { 
   upload, 
   targetLocation
 } from "../middleware/upload.js";
-import { MAX_MB, MAX_FILE_SIZE, MAX_FILE_SIZE_MB } from "../config/uploadConfig.js";
+
+import { MAX_MB, MAX_FILE_SIZE } from "../config/uploadConfig.js";
 
 const router = express.Router();
 
 
-router.get("/",async (req, res) => {
+router.get("/", checkAuth, async (req, res) => {
   try {
       const dataDb = (await db.query("SELECT * FROM upload_document ORDER BY id ASC")).rows;
       let tableData = "";
@@ -68,15 +70,14 @@ router.get("/",async (req, res) => {
 });
 
 
-router.get("/upload", (req, res) => {
+router.get("/upload", checkAuth, (req, res) => {
   try {
       res.render("upload.ejs", { 
         message: req.flash("success")[0] || "", 
         errorMessage: req.flash("error")[0] || "", 
 
         maxMB: MAX_MB,
-        maxFileSize: MAX_FILE_SIZE,
-        maxFileSizeMB: MAX_FILE_SIZE_MB
+        maxFileSize: MAX_FILE_SIZE
       });
   } catch(err) {
       console.log(err);
@@ -84,7 +85,7 @@ router.get("/upload", (req, res) => {
   }
 });
 
-router.post("/upload", upload.fields(UPLOAD_FIELDS),async (req, res) => {
+router.post("/upload", checkAuth, upload.fields(UPLOAD_FIELDS), async (req, res) => {
   try {
       if (!req.files || Object.keys(req.files).length === 0) {
         req.flash("error", "Anda belum upload dokumen!")
@@ -121,7 +122,7 @@ router.post("/upload", upload.fields(UPLOAD_FIELDS),async (req, res) => {
 });
 
 
-router.get("/read_data", async (req, res) => {
+router.get("/read_data", checkAuth, async (req, res) => {
   try {
     const id = req.query.id;
 
@@ -197,8 +198,7 @@ router.get("/read_data", async (req, res) => {
           fields: fields,
 
           maxMB: MAX_MB,
-          maxFileSize: MAX_FILE_SIZE,
-          maxFileSizeMB: MAX_FILE_SIZE_MB
+          maxFileSize: MAX_FILE_SIZE
         };
 
         res.render("read_data.ejs", data);
@@ -211,7 +211,7 @@ router.get("/read_data", async (req, res) => {
 });
 
 
-router.get("/delete_file", async (req, res) => {
+router.get("/delete_file", checkAuth, async (req, res) => {
   try {
     const id = req.query.id;
     const fileName = req.query.fileName;
@@ -282,7 +282,7 @@ router.get("/delete_file", async (req, res) => {
 });
 
 
-router.post("/update_data", upload.fields(UPLOAD_FIELDS), async (req, res) => {
+router.post("/update_data", upload.fields(UPLOAD_FIELDS), checkAuth, async (req, res) => {
   try {
     const id = req.query.id;
     if (!id || id === "") {
@@ -351,7 +351,7 @@ router.post("/update_data", upload.fields(UPLOAD_FIELDS), async (req, res) => {
 });
 
 
-router.get("/download_file", async (req, res) => {
+router.get("/download_file", checkAuth, async (req, res) => {
   try {
     const id = req.query.id;
     const fileName = req.query.fileName;
@@ -437,7 +437,7 @@ router.get("/download_file", async (req, res) => {
 });
 
 
-router.get("/delete", async (req, res) => {
+router.get("/delete", checkAuth, async (req, res) => {
   try{
     const id = req.query.id;
 
@@ -467,17 +467,12 @@ router.get("/delete", async (req, res) => {
       const relativeFolder = path.relative(baseFolder, folderPath);
 
       if (
-        !relativeFolder ||
-        relativeFolder.startsWith("..") ||
-        path.isAbsolute(relativeFolder)
+        !relativeFolder || relativeFolder.startsWith("..") || path.isAbsolute(relativeFolder)
       ) {
         return res.status(403).send("Akses file ditolak.");
       }
 
-      await fs.promises.rm(folderPath, { 
-        recursive: true, 
-        force: true 
-      });
+      await fs.promises.rm(folderPath, { recursive: true, force: true });
 
       await db.query("DELETE FROM upload_document WHERE id = $1", [id]);
 
@@ -489,6 +484,74 @@ router.get("/delete", async (req, res) => {
     res.status(500).send("Terjadi kesalahan sistem pada route /delete.");
   }
 });
+
+router.get("/login", isAlreadyLoggedIn, async (req, res) => {
+  res.render("login.ejs");
+});
+
+router.post("/login", async (req, res) => {
+  try {
+    const email = req.body.username;
+    const password = req.body.password;
+
+    const dataDb = (await db.query("SELECT id, username, password FROM users WHERE username = $1", [email])).rows;
+
+    if(dataDb.length === 0) {
+      return res.status(400).send("Username atau password salah!.");
+    }
+
+    const targetData = dataDb[0];
+
+    if (!targetData) {
+          return res.status(404).send("Data yang anda cari tidak ditemukan!.");
+    }
+
+    const hashedPassword = targetData.password;
+    const isAuth = await bcrypt.compare(password, hashedPassword);
+
+    if(isAuth) {
+      req.session.userId = targetData.id;
+      req.session.username = targetData.username;
+      return res.redirect("/");
+    } else {
+      req.flash("error", "Username atau password salah!.");
+      return res.render("login.ejs");
+    }
+  } catch(err) {
+    console.error("Error pada route /login:", err);
+    res.status(500).send("Terjadi kesalahan sistem pada route /login.");
+  }
+});
+
+function checkAuth(req, res, next) {
+  if (req.session && req.session.userId) {
+    return next();
+  } else {
+    return res.redirect("/login");
+  }
+}
+
+function isAlreadyLoggedIn(req, res, next) {
+  if (req.session && req.session.userId) {
+    return res.redirect("/");
+  }
+  next();
+}
+
+router.get("/logout", (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error("Gagal menghapus session:", err);
+      return res.status(500).send("Gagal logout.");
+    }
+    res.clearCookie("connect.sid");
+    res.redirect("/login");
+  });
+});
+
+
+
+
 
 
 

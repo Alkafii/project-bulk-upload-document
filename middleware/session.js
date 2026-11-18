@@ -3,7 +3,7 @@ import flash from "connect-flash";
 import connectPgSimple from "connect-pg-simple";
 import db from "./../config/database.js";
 
-// Session dan flash
+
 const PgSession = connectPgSimple(session);
 
 const sessionMiddleware = session({
