@@ -1,55 +1,49 @@
-<div class="form-row mb-3">
+/* Drag and Drop Container */
+.custom-file {
+    position: relative;
+    width: 100%;
+    height: 130px;
+}
 
-    <div class="form-group col-md-6 mb-0 pr-3">
-        <label>Form Pendaftaran API</label>
+/* File Input */
+.custom-file .custom-file-input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 2;
+}
 
-        <div class="custom-file">
-            <input
-                type="file"
-                class="custom-file-input"
-                name="Form_Pendaftaran_API"
-                id="dokumen"
-                accept=".pdf,.doc,.docx,.xls,.xlsx"
-            >
-            <label
-                class="custom-file-label text-truncate"
-                for="dokumen"
-                data-browse="🗀"
-                style="padding-right: 50px;"
-            >
-                Choose file
-            </label>
-        </div>
+/* Drag and Drop Area */
+.custom-file .custom-file-label {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    border: 2px dashed #b8c2d1;
+    border-radius: 8px;
+    background-color: #f8faff;
 
-        <small class="form-text text-muted">
-            File formats: PDF, DOCX, XLSX.
-        </small>
-    </div>
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
-    <div class="form-group col-md-6 mb-0 pl-3">
-        <label>Memo Bisnis</label>
+    text-align: center;
+    cursor: pointer;
+    padding: 15px;
+    color: #6c757d;
+}
 
-        <div class="custom-file">
-            <input
-                type="file"
-                class="custom-file-input"
-                name="Memo_Bisnis"
-                id="dokumen"
-                accept=".pdf,.doc,.docx,.xls,.xlsx"
-            >
-            <label
-                class="custom-file-label text-truncate"
-                for="dokumen"
-                data-browse="🗀"
-                style="padding-right: 50px;"
-            >
-                Choose file
-            </label>
-        </div>
+/* Hilangkan tombol Browse bawaan Bootstrap */
+.custom-file-label::after {
+    display: none;
+}
 
-        <small class="form-text text-muted">
-            File formats: PDF, DOCX, XLSX.
-        </small>
-    </div>
-
-</div>
+/* Hover Effect */
+.custom-file:hover .custom-file-label {
+    border-color: #007bff;
+    background-color: #f0f6ff;
+}
