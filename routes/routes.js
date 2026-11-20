@@ -37,24 +37,27 @@ router.get("/", checkAuth, async (req, res) => {
           const totalDocument = dataDb[i];
           const targetDocument = (totalDocument.va_type === "Off Us" || totalDocument.api_name === "QRIS MPM SNAP") ? 20 : 22;
           const filesArray = typeof totalDocument.uploaded_files === "string" ? JSON.parse(totalDocument.uploaded_files) : (totalDocument.uploaded_files || []);
-          tableData += `<div class="row no-gutters p-3 text-center align-items-center bg-white border-bottom">
-                          <div class="col-1 text-left pl-3 font-weight-bold text-muted">${i + 1}</div>
-                          <div class="col-3 text-left font-weight-bold text-dark">${dataDb[i].name}</div>
-                          <div class="col-2 text-left text-monospace text-secondary">${dataDb[i].api_name} ${dataDb[i].va_type}</div>
-                          <div class="col-2 text-left">${dataDb[i].created_at}</div>
-                          <div class="col-2 text-left">${dataDb[i].updated_at}</div>
-                          <div class="col-1 text-center"><b>${filesArray.length}</b>/${targetDocument}</div>
-                          <div class="col-1 dropdown">
-                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle py-0" type="button" id="dropdownMenuButton${i}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                Edit
-                            </button>
-                            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenu2">
-                              <a class="dropdown-item" href="/read_data?id=${dataDb[i].id}">Update</a>
-                              <button type="button" class="dropdown-item text-danger" data-toggle="modal" data-target="#deleteModal" data-id="${dataDb[i].id}" data-name="${dataDb[i].name}">
-                                Delete
-                              </button>
+          tableData += `<div class="row no-gutters p-3 text-center align-items-center border-bottom" style="font-size: 0.9rem; background-color: #fff;">
+                            <div class="col-1 d-flex align-items-center justify-content-start pl-3">
+                                <div style="width: 32px;" class="text-left">
+                                    <input type="checkbox" id="check_${dataDb[i].id}" class="check" checked />
+                                </div>
+                                <span class="font-weight-bold text-muted pl-1">${i + 1}</span>
                             </div>
-                          </div>
+                            <div class="col-2 text-left font-weight-bold text-dark pl-3">${dataDb[i].name}</div>
+                            <div class="col-3 text-left text-secondary">${dataDb[i].api_name} ${dataDb[i].va_type || ''}</div>
+                            <div class="col-2 text-left text-dark">${String(dataDb[i].created_at).slice(0, 24)}</div>
+                            <div class="col-2 text-left text-dark">${String(dataDb[i].updated_at).slice(0, 24)}</div>
+                            <div class="col-1 text-center font-weight-bold">${filesArray.length}/${targetDocument}</div>
+                            <div class="col-1 dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle py-0 px-2" type="button" data-toggle="dropdown" style="font-size: 0.8rem;">
+                                    Action
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-right">
+                                    <a class="dropdown-item" href="/read_data?id=${dataDb[i].id}">View</a>
+                                    <button type="button" class="dropdown-item text-danger" data-toggle="modal" data-target="#deleteModal" data-id="${dataDb[i].id}" data-name="${dataDb[i].name}">Delete</button>
+                                </div>
+                            </div>
                         </div>`;
         }
         data.rowData = tableData;
@@ -84,6 +87,7 @@ router.get("/upload", checkAuth, (req, res) => {
       res.status(500).send("Terjadi kesalahan pada server. Silakan coba beberapa saat lagi.");
   }
 });
+
 
 router.post("/upload", checkAuth, upload.fields(UPLOAD_FIELDS), async (req, res) => {
   try {
@@ -126,89 +130,78 @@ router.get("/read_data", checkAuth, async (req, res) => {
   try {
     const id = req.query.id;
 
-    if (typeof id === "undefined" || id === "") {
+    if (!id || id === "") {
       return res.status(400).send("ID data tidak valid.");
-      
-    } else {
-      const dataDb = (await db.query("SELECT * FROM upload_document WHERE id = $1", [id])).rows;
-      const targetData = dataDb[0]; 
+    }
 
-      if (!targetData) {
-        return res.status(404).send("Data yang anda cari tidak ditemukan!.");
-        
-      } else {
-        let uploaded_file = [];
-        const dbFiles = targetData.uploaded_files || targetData.uploaded_files;
-        if (dbFiles) {
-          try {
-            uploaded_file = typeof dbFiles === "string" ? JSON.parse(dbFiles) : dbFiles;
-          } catch (err) {
-            console.log("Gagal parse JSON dari DB, beralih ke pembacaan folder.");
-          }
-        }
+    const dataDb = (await db.query("SELECT * FROM upload_document WHERE id = $1", [id])).rows;
+    const targetData = dataDb[0]; 
 
-        let fields = {};
+    if (!targetData) {
+      return res.status(404).send("Data yang anda cari tidak ditemukan!.");
+    }
 
-        for (let i = 0; i < REQUIRED_DOCUMENTS.length; i++) {
-          const docName = REQUIRED_DOCUMENTS[i];
-
-          const foundFileName = uploaded_file.find(function(file) {
-            return file.startsWith(docName);
-          });
-          
-          let isUploaded = (foundFileName !== undefined);
-
-          if (isUploaded) {
-            fields[docName] = `<div class="custom-file">
-                                  <input type="file" class="custom-file-input" name="${docName}" id="doc_${i}" accept=".pdf,.doc,.docx,.xls,.xlsx" style="cursor: pointer;" />
-                                  <label class="custom-file-label text-truncate text-success" for="doc_${i}" id="label_doc_${i}" data-browse="🗙" style="padding-right: 50px; font-weight: 500;" >
-                                    ${foundFileName}
-                                  </label>
-                                  <button type="button" 
-                                      class="position-absolute h-100 d-flex align-items-center justify-content-center text-decoration-none text-secondary" 
-                                      style="right: 0; top: 0; width: 42px; z-index: 10; background-color: #e9ecef; border-left: 1px solid #ced4da; border-radius: 0 0.25rem 0.25rem 0; font-size: 16px; cursor: pointer; border: none;"
-                                      title="Hapus berkas ini"
-                                      data-toggle="modal" 
-                                      data-target="#modalDeleteConfirmation"
-                                      data-id="${id}"
-                                      data-filename="${foundFileName}">
-                                        🗙
-                                  </button>
-                               </div>
-                              <small class="form-text text-muted">Document has been saved, click <a href="/download_file?id=${id}&fileName=${foundFileName}" target="_blank" class="font-weight-bold text-primary"> here </a> to download this document.</small>`;
-          } else {
-            fields[docName] = `<div class="custom-file">
-                                  <input type="file" class="custom-file-input" name="${docName}" id="doc_${i}" accept=".pdf,.doc,.docx,.xls,.xlsx">
-                                  <label class="custom-file-label text-truncate text-muted" id="label_doc_${i}" for="doc_${i}" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                              </div>
-                              <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>`;
-          }
-        }
-
-        const formatCreateDate = targetData.created_at ? targetData.created_at.toString().slice(0, 33) : "-";
-        
-        let data = {
-          id: id,
-          institution: targetData.name, 
-          integration: targetData.api_name,
-          vaType: targetData.va_type,
-          create_date: formatCreateDate,
-          message: req.flash("success")[0] || "",
-          errorMessage: req.flash("error")[0] || "",
-          fields: fields,
-
-          maxMB: MAX_MB,
-          maxFileSize: MAX_FILE_SIZE
-        };
-
-        res.render("read_data.ejs", data);
+    let uploaded_file = [];
+    const dbFiles = targetData.uploaded_files;
+    if (dbFiles) {
+      try {
+        uploaded_file = typeof dbFiles === "string" ? JSON.parse(dbFiles) : dbFiles;
+      } catch (err) {
+        console.log("Gagal parse JSON dari DB, beralih ke array kosong.");
       }
     }
+
+    let fields = {};
+
+    for (let i = 0; i < REQUIRED_DOCUMENTS.length; i++) {
+      const docName = REQUIRED_DOCUMENTS[i];
+
+      const foundFileName = uploaded_file.find(function(file) {
+        return file.startsWith(docName);
+      });
+      
+      let isUploaded = (foundFileName !== undefined);
+
+      if (isUploaded) {
+        fields[docName] = `<div class="custom-file">
+                              <input type="file" class="custom-file-input" name="${docName}" id="doc_${i}" accept=".pdf,.doc,.docx,.xls,.xlsx" disabled />
+                              <label class="custom-file-label text-truncate text-success" for="doc_${i}" id="label_doc_${i}" data-browse="🔒︎" style="padding-right: 15px; font-weight: 500;" >
+                                ${foundFileName}
+                              </label>
+                           </div>
+                          <small class="form-text text-muted">Document has been saved, click <a href="/download_file?id=${id}&fileName=${foundFileName}" target="_blank" class="font-weight-bold text-primary"> here </a> to download this document.</small>`;
+      } else {
+        fields[docName] = `<div class="custom-file">
+                              <input type="file" class="custom-file-input" name="${docName}" id="doc_${i}" accept=".pdf,.doc,.docx,.xls,.xlsx" disabled>
+                              <label class="custom-file-label text-truncate text-muted" id="label_doc_${i}" for="doc_${i}" data-browse="📄" style="padding-right: 15px;">Belum ada dokumen</label>
+                          </div>
+                          <small class="form-text text-muted text-danger">Dokumen ini belum diunggah.</small>`;
+      }
+    }
+
+    const formatCreateDate = targetData.created_at ? targetData.created_at.toString().slice(0, 33) : "-";
+    
+    let data = {
+      id: id,
+      institution: targetData.name, 
+      integration: targetData.api_name,
+      vaType: targetData.va_type,
+      create_date: formatCreateDate,
+      message: req.flash("success")[0] || "",
+      errorMessage: req.flash("error")[0] || "",
+      fields: fields,
+      maxMB: MAX_MB,
+      maxFileSize: MAX_FILE_SIZE
+    };
+
+    res.render("read_data.ejs", data);
+
   } catch (err) {
     console.error("Error pada rute read_data:", err);
     res.status(500).send("Terjadi kesalahan pada sistem.");
   }
 });
+
 
 
 router.get("/delete_file", checkAuth, async (req, res) => {
@@ -269,7 +262,7 @@ router.get("/delete_file", checkAuth, async (req, res) => {
     await db.query("UPDATE upload_document SET updated_at = $1, uploaded_files = $2 WHERE id = $3", [date, JSON.stringify(updatedFiles), id]);
 
     req.flash("success", "Dokumen berhasil dihapus dari server!");
-    return res.redirect(`/read_data?id=${id}`);
+    return res.redirect(`/update_data?id=${id}`);
   } catch (err) {
     console.error("Error pada route delete_file:", err);
 
@@ -278,6 +271,70 @@ router.get("/delete_file", checkAuth, async (req, res) => {
     }
 
     res.status(500).send("Terjadi kesalahan pada sistem.");
+  }
+});
+
+
+router.get("/update_data", checkAuth, async (req, res) => {
+  try {
+    const id = req.query.id;
+    if (!id || id === "") {
+      return res.status(400).send("ID data tidak valid.");
+    }
+
+    const dataDb = (await db.query("SELECT * FROM upload_document WHERE id = $1", [id])).rows;
+    const targetData = dataDb[0]; 
+
+    if (!targetData) {
+      return res.status(404).send("Data tidak ditemukan.");
+    }
+
+    let uploaded_file = [];
+    if (targetData.uploaded_files) {
+      uploaded_file = typeof targetData.uploaded_files === "string" ? JSON.parse(targetData.uploaded_files) : targetData.uploaded_files;
+    }
+
+    let fields = {};
+    for (let i = 0; i < REQUIRED_DOCUMENTS.length; i++) {
+      const docName = REQUIRED_DOCUMENTS[i];
+      const foundFileName = uploaded_file.find(file => file.startsWith(docName));
+      
+      if (foundFileName) {
+        fields[docName] = `<div class="custom-file">
+                              <input type="file" class="custom-file-input" name="${docName}" id="doc_${i}" accept=".pdf,.doc,.docx,.xls,.xlsx" style="cursor: pointer;" />
+                              <label class="custom-file-label text-truncate text-success" for="doc_${i}" id="label_doc_${i}" data-browse="🗙" style="padding-right: 50px; font-weight: 500;">
+                                ${foundFileName}
+                              </label>
+                              <button type="button" class="position-absolute h-100 d-flex align-items-center justify-content-center text-decoration-none text-secondary"  style="right: 0; top: 0; width: 42px; z-index: 10; background-color: #e9ecef; border-left: 1px solid #ced4da; border-radius: 0 0.25rem 0.25rem 0; font-size: 16px; cursor: pointer; border: none;" title="Hapus berkas ini" data-toggle="modal" data-target="#modalDeleteConfirmation" data-id="${id}" data-filename="${foundFileName}">
+                                  🗙
+                              </button>
+                           </div>
+                           <small class="form-text text-muted">File has been saved.</small>`;
+      } else {
+        fields[docName] = `<div class="custom-file">
+                              <input type="file" class="custom-file-input" name="${docName}" id="doc_${i}" accept=".pdf,.doc,.docx,.xls,.xlsx">
+                              <label class="custom-file-label text-truncate text-muted" id="label_doc_${i}" for="doc_${i}" data-browse="📄" style="padding-right: 50px;">Choose file</label>
+                           </div>
+                           <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>`;
+      }
+    }
+
+    res.render("update_data.ejs", {
+      id: id,
+      institution: targetData.name, 
+      integration: targetData.api_name,
+      vaType: targetData.va_type,
+      create_date: targetData.created_at ? targetData.created_at.toString().slice(0, 33) : "-",
+      message: req.flash("success")[0] || "",
+      errorMessage: req.flash("error")[0] || "",
+      fields: fields,
+      maxMB: MAX_MB,
+      maxFileSize: MAX_FILE_SIZE
+    });
+
+  } catch (err) {
+    console.error("Error pada rute update_data GET:", err);
+    res.status(500).send("Terjadi kesalahan sistem.");
   }
 });
 
@@ -291,7 +348,7 @@ router.post("/update_data", upload.fields(UPLOAD_FIELDS), checkAuth, async (req,
 
     if (!req.files || Object.keys(req.files).length === 0) {
         req.flash("error", "Anda belum memilih dokumen baru untuk diperbarui!");
-        return res.redirect(`/read_data?id=${id}`);
+        return res.redirect(`/update_data?id=${id}`);
       };
 
     const dataDb = (await db.query("SELECT * FROM upload_document WHERE id = $1", [id])).rows;
@@ -512,7 +569,7 @@ router.post("/login", async (req, res) => {
     if(isAuth) {
       req.session.userId = targetData.id;
       req.session.username = targetData.username;
-      return res.redirect("/");
+      return res.redirect("/upload");
     } else {
       req.flash("error", "Username atau password salah!.");
       return res.render("login.ejs");
@@ -533,7 +590,7 @@ function checkAuth(req, res, next) {
 
 function isAlreadyLoggedIn(req, res, next) {
   if (req.session && req.session.userId) {
-    return res.redirect("/");
+    return res.redirect("/upload");
   }
   next();
 }

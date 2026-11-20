@@ -14,10 +14,9 @@
         <div class="flex-fill p-5 overflow-auto">
             <div class="container-fluid px-0">
                 <div class="w-100 d-flex justify-content-between align-items-center mb-4">
-                    <h3 class="font-weight-bold text-dark m-0">Integration Documents</h3>
-                    <a href="/upload" class="btn btn-primary shadow-sm font-weight-bold px-4 py-2" style="border-radius: 6px;">✚ Add</a>
+                    <h3 class="font-weight-bold text-primary m-0">Integration Documents</h3>
+                    <a href="/upload" type="button" class="btn btn-primary">✚ Add</a>
                 </div>
-
                 <div class="py-2 px-0 w-100 overflow-visible">
                     <% if (typeof message !== 'undefined' && message) { %>
                         <div class="alert alert-success alert-dismissible fade show w-100 text-center mb-4 shadow-sm" role="alert">
@@ -27,11 +26,14 @@
                             </button>
                         </div>
                     <% } %>
-                    <div class="card border-0 shadow-sm overflow-hidden" style="border-radius: 8px;">
-                        <div class="row no-gutters bg-dark text-white font-weight-bold p-3 text-center align-items-center" style="font-size: 0.95rem;">
-                            <div class="col-1 text-left pl-3">No</div>
-                            <div class="col-3 text-left">Partner</div>
-                            <div class="col-2 text-left">API Name</div>
+                    <div class="card border-0 shadow-sm">
+                        <div class="row no-gutters bg-primary text-white font-weight-bold p-3 text-center align-items-center rounded-top">
+                            <div class="col-1 d-flex align-items-left pl-3">
+                                <div style="width: 32px;" class="text-left"></div>
+                                <div class="pl-1">No</div>
+                            </div>
+                            <div class="col-2 text-left" style="padding-left: 15px;">Partner</div>
+                            <div class="col-3 text-left">API Name</div>
                             <div class="col-2 text-left">Create Data</div>
                             <div class="col-2 text-left">Last Update</div>
                             <div class="col-1 text-center">Uploaded</div>
@@ -44,7 +46,6 @@
                 </div>
             </div>
         </div>
-
     </div>
 
     <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <link rel="stylesheet" href="/style/style.css">
 </head>
 <body>
     <div class="app-layout">
@@ -11,16 +12,18 @@
     <%- include('./partials/sidebar.ejs') %>
 
         <main class="app-content">
-            <div class="app-content-inner"> 
-                <div class="d-flex justify-content-end mb-3">
-                    <a href="/" class="btn btn-primary shadow-sm">Back</a>
+            <div class="container-fluid px-0">
+                <div class="d-flex justify-content mb-4">
+                    <a href="/" class="text-primary font-weight-bold d-flex align-items-center" style="font-size: large;">
+                        <span class="mr-1">❮</span> Back
+                    </a>
+                    <a href="/update_data?id=<%= id %>" class="btn btn-primary font-weight-bold text-center ml-auto" style="width: 85px;">
+                        Edit
+                    </a>
                 </div>
-
-                <div class="card p-4 shadow-sm w-100" style="max-width: 1000px; border-radius: 10px;">
-                    <form action="/update_data?id=<%= id %>" method="post" enctype="multipart/form-data">
-                        <h3 class="text-primary text-uppercase font-weight-bold mt-3 text-left">EDIT - <%= institution %></h3>
+                <div class="card border-1 p-4 shadow-sm w-100" style="border-radius: 8px;">
+                        <h3 class="text-primary text-uppercase font-weight-bold mt-3 text-left">READ - <%= institution %></h3>
                         <p class="mb-1">Integrasi dengan Mitra <%= institution %> menggunakan API <%= integration %> <%= vaType %>, data dibuat pada <%= create_date %></p>
-
                         <% if (message) { %>
                             <div class="alert alert-success alert-dismissible fade show w-100 text-center mb-4 shadow-sm" style="max-width: 1000px;" role="alert">
                                 <strong><%= message %></strong>
@@ -252,14 +255,8 @@
                                         <%- fields["Hasil_Uji_Fungsi"] %>
                                     </div>
                                 </div>
-                                <div class="row no-gutters mb-3">
-                                    <div class="col-12">
-                                        <button type="submit" class="btn btn-primary btn-block">Update</button>
-                                    </div>
-                                </div>
                             </div>
                         </div>
-                    </form>
                 </div>
             </div>
         </main>
@@ -268,19 +265,12 @@
     <div class="modal fade" id="modalDeleteConfirmation" tabindex="-1" role="dialog" aria-labelledby="labelDeleteConfirmation" aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="labelDeleteConfirmation">Confirm to delete this document</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                Are you sure you want to delete the integration document "<strong id="nama-berkas-modal"></strong>"?
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancek</button>
-                <a id="btn-delete-confirmation" href="#" class="btn btn-danger">Delete</a>
-            </div>
+                <div class="modal-header">
+                    <h5 class="modal-title" id="labelDeleteConfirmation">Confirm to delete this document</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -398,7 +388,6 @@
                 });
             });
 
-            // Mencegah browser membuka file saat di-drop sembarangan
             document.addEventListener('dragover', (e) => e.preventDefault());
             document.addEventListener('drop', (e) => !e.target.closest('.custom-file') && e.preventDefault());
 
@@ -430,6 +419,10 @@
                 modal.querySelector("#btn-delete-confirmation").setAttribute("href",deleteUrl);
             });
         });
+
+        $('.form-group input').prop('disabled', true);
+
+        $('.form-group .custom-file-input').prop('disabled', true);
     </script>
 
     </body>
