@@ -5,18 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
     <link rel="stylesheet" href="/style/style.css">
-    <style>
-        .form-step-section {
-            display: none;
-        }
-        .form-step-section.active {
-            display: block;
-        }
-        .stepper-item.completed .step-counter {
-            background-color: #28a745 !important;
-            color: white !important;
-        }
-    </style>
 </head>
 <body>
     <div class="app-layout">
@@ -24,6 +12,7 @@
         <%- include('./partials/sidebar.ejs') %>
 
         <main class="app-content">
+
             <div class="sticky-stepper-wrapper">
                 <div class="stepper-container">
                     <div class="stepper-item active" id="step1">
@@ -218,16 +207,16 @@
                                     <div class="form-group col-md-6 mb-0 pr-3">
                                         <label>Inquiry <label class="font-weight-bold text-success">(Positif)</label></label>
                                         <div class="custom-file">
-                                            <input type="file" class="custom-file-input text-truncate" name="24_API_VA_Inquiry_Positif" id="va_inq_pos">
-                                            <label class="custom-file-label text-truncate" for="va_inq_pos" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
+                                            <input type="file" class="custom-file-input text-truncate" name="24 - API Virtual Account - Inquiry - Positif" id="24 - API Virtual Account - Inquiry - Positif">
+                                            <label class="custom-file-label text-truncate" for="24 - API Virtual Account - Inquiry - Positif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
                                         </div>
                                         <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
                                     </div>
                                     <div class="form-group col-md-6 mb-0 pl-3">
                                         <label>Inquiry <label class="font-weight-bold text-danger">(Negatif)</label></label>
                                         <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="24_API_VA_Inquiry_Negatif" id="va_inq_neg">
-                                            <label class="custom-file-label text-truncate" for="va_inq_neg" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
+                                            <input type="file" class="custom-file-input" name="24 - API Virtual Account - Inquiry - Negatif" id="24 - API Virtual Account - Inquiry - Negatif">
+                                            <label class="custom-file-label text-truncate" for="24 - API Virtual Account - Inquiry - Negatif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
                                         </div>
                                         <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
                                     </div>
@@ -236,16 +225,16 @@
                                     <div class="form-group col-md-6 mb-0 pr-3">
                                         <label>Payment <label class="font-weight-bold text-success">(Positif)</label></label>
                                         <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="25_API_VA_Payment_Positif" id="va_pay_pos">
-                                            <label class="custom-file-label text-truncate" for="va_pay_pos" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
+                                            <input type="file" class="custom-file-input" name="25 - API Virtual Account - Payment - Positif" id="25 - API Virtual Account - Payment - Positif">
+                                            <label class="custom-file-label text-truncate" for="25 - API Virtual Account - Payment - Positif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
                                         </div>
                                         <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
                                     </div>
                                     <div class="form-group col-md-6 mb-0 pl-3">
                                         <label>Payment <label class="font-weight-bold text-danger">(Negatif)</label></label>
                                         <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="25_API_VA_Payment_Negatif" id="va_pay_neg">
-                                            <label class="custom-file-label text-truncate" for="va_pay_neg" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
+                                            <input type="file" class="custom-file-input" name="25 - API Virtual Account - Payment - Negatif" id="25 - API Virtual Account - Payment - Negatif">
+                                            <label class="custom-file-label text-truncate" for="25 - API Virtual Account - Payment - Negatif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
                                         </div>
                                         <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
                                     </div>
@@ -254,16 +243,16 @@
                                     <div class="form-group col-md-6 mb-0 pr-3">
                                         <label>Inquiry Status <label class="font-weight-bold text-success">(Positif)</label></label>
                                         <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="26_API_VA_InqStat_Positif" id="va_stat_pos">
-                                            <label class="custom-file-label text-truncate" for="va_stat_pos" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
+                                            <input type="file" class="custom-file-input" name="26 - API Virtual Account - Inquiry Status - Positif" id="26 - API Virtual Account - Inquiry Status - Positif">
+                                            <label class="custom-file-label text-truncate" for="26 - API Virtual Account - Inquiry Status - Positif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
                                         </div>
                                         <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
                                     </div>
                                     <div class="form-group col-md-6 mb-0 pl-3">
                                         <label>Inquiry Status <label class="font-weight-bold text-danger">(Negatif)</label></label>
                                         <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="26_API_VA_InqStat_Negatif" id="va_stat_neg">
-                                            <label class="custom-file-label text-truncate" for="va_stat_neg" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
+                                            <input type="file" class="custom-file-input" name="26 - API Virtual Account - Inquiry Status - Negatif" id="26 - API Virtual Account - Inquiry Status - Negatif">
+                                            <label class="custom-file-label text-truncate" for="26 - API Virtual Account - Inquiry Status - Negatif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
                                         </div>
                                         <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
                                     </div>
@@ -277,16 +266,16 @@
                                     <div class="form-group col-md-6 mb-0 pr-3">
                                         <label>Create VA <label class="font-weight-bold text-success">(Positif)</label></label>
                                         <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="27_API_VA_Create_Positif" id="va_create_pos">
-                                            <label class="custom-file-label text-truncate" for="va_create_pos" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
+                                            <input type="file" class="custom-file-input" name="27 - API Virtual Account - Create VA - Positif" id="27 - API Virtual Account - Create VA - Positif">
+                                            <label class="custom-file-label text-truncate" for="27 - API Virtual Account - Create VA - Positif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
                                         </div>
                                         <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
                                     </div>
                                     <div class="form-group col-md-6 mb-0 pl-3">
                                         <label>Create VA <label class="font-weight-bold text-danger">(Negatif)</label></label>
                                         <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="27_API_VA_Create_Negatif" id="va_create_neg">
-                                            <label class="custom-file-label text-truncate" for="va_create_neg" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
+                                            <input type="file" class="custom-file-input" name="27 - API Virtual Account - Create VA - Negatif" id="27 - API Virtual Account - Create VA - Negatif">
+                                            <label class="custom-file-label text-truncate" for="27 - API Virtual Account - Create VA - Negatif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
                                         </div>
                                         <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
                                     </div>
@@ -295,16 +284,16 @@
                                     <div class="form-group col-md-6 mb-0 pr-3">
                                         <label>Inquiry VA <label class="font-weight-bold text-success">(Positif)</label></label>
                                         <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="30_API_VA_Inquiry_Positif" id="va_on_inq_pos">
-                                            <label class="custom-file-label text-truncate" for="va_on_inq_pos" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
+                                            <input type="file" class="custom-file-input" name="30 - API Virtual Account - Inquiry VA - Positif" id="30 - API Virtual Account - Inquiry VA - Positif">
+                                            <label class="custom-file-label text-truncate" for="30 - API Virtual Account - Inquiry VA - Positif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
                                         </div>
                                         <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
                                     </div>
                                     <div class="form-group col-md-6 mb-0 pl-3">
                                         <label>Inquiry VA <label class="font-weight-bold text-danger">(Negatif)</label></label>
                                         <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="30_API_VA_Inquiry_Negatif" id="va_on_inq_neg">
-                                            <label class="custom-file-label text-truncate" for="va_on_inq_neg" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
+                                            <input type="file" class="custom-file-input" name="30 - API Virtual Account - Inquiry VA - Negatif" id="30 - API Virtual Account - Inquiry VA - Negatif">
+                                            <label class="custom-file-label text-truncate" for="30 - API Virtual Account - Inquiry VA - Negatif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
                                         </div>
                                         <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
                                     </div>
@@ -313,16 +302,34 @@
                                     <div class="form-group col-md-6 mb-0 pr-3">
                                         <label>Update VA <label class="font-weight-bold text-success">(Positif)</label></label>
                                         <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="28_API_VA_Update_Positif" id="va_up_pos">
-                                            <label class="custom-file-label text-truncate" for="va_up_pos" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
+                                            <input type="file" class="custom-file-input" name="28 - API Virtual Account - Update VA - Positif" id="28 - API Virtual Account - Update VA - Positif">
+                                            <label class="custom-file-label text-truncate" for="28 - API Virtual Account - Update VA - Positif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
                                         </div>
                                         <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
                                     </div>
                                     <div class="form-group col-md-6 mb-0 pl-3">
                                         <label>Update VA <label class="font-weight-bold text-danger">(Negatif)</label></label>
                                         <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="28_API_VA_Update_Negatif" id="va_up_neg">
-                                            <label class="custom-file-label text-truncate" for="va_up_neg" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
+                                            <input type="file" class="custom-file-input" name="28 - API Virtual Account - Update VA - Negatif" id="28 - API Virtual Account - Update VA - Negatif">
+                                            <label class="custom-file-label text-truncate" for="28 - API Virtual Account - Update VA - Negatif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
+                                        </div>
+                                        <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
+                                    </div>
+                                </div>
+                                <div class="form-row mb-4">
+                                    <div class="form-group col-md-6 mb-0 pr-3">
+                                        <label>Payment VA <label class="font-weight-bold text-success">(Positif)</label></label>
+                                        <div class="custom-file">
+                                            <input type="file" class="custom-file-input" name="25 - API Virtual Account - Payment VA - Positif" id="25 - API Virtual Account - Payment VA - Positif">
+                                            <label class="custom-file-label text-truncate" for="25 - API Virtual Account - Payment VA - Positif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
+                                        </div>
+                                        <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
+                                    </div>
+                                    <div class="form-group col-md-6 mb-0 pl-3">
+                                        <label>Payment VA <label class="font-weight-bold text-danger">(Negatif)</label></label>
+                                        <div class="custom-file">
+                                            <input type="file" class="custom-file-input" name="25 - API Virtual Account - Payment VA - Negatif" id="25 - API Virtual Account - Payment VA - Negatif">
+                                            <label class="custom-file-label text-truncate" for="25 - API Virtual Account - Payment VA - Negatif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
                                         </div>
                                         <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
                                     </div>
@@ -336,16 +343,16 @@
                                     <div class="form-group col-md-6 mb-0 pr-3">
                                         <label>Generate QRIS MPM <label class="font-weight-bold text-success">(Positif)</label></label>
                                         <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="47_API_Gen_QR_Positif" id="qris_gen_pos">
-                                            <label class="custom-file-label text-truncate" for="qris_gen_pos" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
+                                            <input type="file" class="custom-file-input" name="47 - API Generate QR MPM - Positif" id="47 - API Generate QR MPM - Positif">
+                                            <label class="custom-file-label text-truncate" for="47 - API Generate QR MPM - Positif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
                                         </div>
                                         <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
                                     </div>
                                     <div class="form-group col-md-6 mb-0 pl-3">
                                         <label>Generate QRIS MPM <label class="font-weight-bold text-danger">(Negatif)</label></label>
                                         <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="47_API_Gen_QR_Negatif" id="qris_gen_neg">
-                                            <label class="custom-file-label text-truncate" for="qris_gen_neg" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
+                                            <input type="file" class="custom-file-input" name="47 - API Generate QR MPM - Negatif" id="47 - API Generate QR MPM - Negatif">
+                                            <label class="custom-file-label text-truncate" for="47 - API Generate QR MPM - Negatif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
                                         </div>
                                         <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
                                     </div>
@@ -354,16 +361,34 @@
                                     <div class="form-group col-md-6 mb-0 pr-3">
                                         <label>QRIS Check Status <label class="font-weight-bold text-success">(Positif)</label></label>
                                         <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="51_API_Query_Pay_Positif" id="qris_ch_pos">
-                                            <label class="custom-file-label text-truncate" for="qris_ch_pos" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
+                                            <input type="file" class="custom-file-input" name="51 - API Query Payment - Positif" id="51 - API Query Payment - Positif">
+                                            <label class="custom-file-label text-truncate" for="51 - API Query Payment - Positif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
                                         </div>
                                         <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
                                     </div>
                                     <div class="form-group col-md-6 mb-0 pl-3">
                                         <label>QRIS Check Status <label class="font-weight-bold text-danger">(Negatif)</label></label>
                                         <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="51_API_Query_Pay_Negatif" id="qris_ch_neg">
-                                            <label class="custom-file-label text-truncate" for="qris_ch_neg" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
+                                            <input type="file" class="custom-file-input" name="51 - API Query Payment - Negatif" id="51 - API Query Payment - Negatif">
+                                            <label class="custom-file-label text-truncate" for="51 - API Query Payment - Negatif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
+                                        </div>
+                                        <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
+                                    </div>
+                                </div>
+                                <div class="form-row mb-3">
+                                    <div class="form-group col-md-6 mb-0 pr-3">
+                                        <label>QRIS Callback <label class="font-weight-bold text-success">(Positif)</label></label>
+                                        <div class="custom-file">
+                                            <input type="file" class="custom-file-input" name="52 - API Payment Notification - Positif" id="52 - API Payment Notification - Positif">
+                                            <label class="custom-file-label text-truncate" for="52 - API Payment Notification - Positif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
+                                        </div>
+                                        <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
+                                    </div>
+                                    <div class="form-group col-md-6 mb-0 pl-3">
+                                        <label>QRIS Callback <label class="font-weight-bold text-danger">(Negatif)</label></label>
+                                        <div class="custom-file">
+                                            <input type="file" class="custom-file-input" name="52 - API Payment Notification - Negatif" id="52 - API Payment Notification - Negatif">
+                                            <label class="custom-file-label text-truncate" for="52 - API Payment Notification - Negatif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
                                         </div>
                                         <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
                                     </div>

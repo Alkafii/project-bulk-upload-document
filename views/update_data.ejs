@@ -308,7 +308,7 @@
                             <div class="row no-gutters mb-3">
                                 <div class="col-12 d-flex justify-content-between">
                                     <button class="btn btn-secondary btn-step-nav" type="button" data-prev="3" style="width: 100px;">Previous</button>
-                                    <button type="submit" class="btn btn-primary" style="width: 120px;">Update</button>
+                                    <button type="button" id="btnSaveTrigger" class="btn btn-success" style="width: 120px;">Save</button>
                                 </div>
                             </div>
                         </div>
@@ -335,6 +335,27 @@
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                 <a id="btn-delete-confirmation" href="#" class="btn btn-danger">Delete</a>
             </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Konfirmasi Save Berkas -->
+    <div class="modal fade" id="modalSaveConfirmation" tabindex="-1" role="dialog" aria-labelledby="labelSaveConfirmation" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="labelSaveConfirmation">Konfirmasi Simpan Berkas</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to save and upload all documents for the institution "<strong id="nama-institusi-modal"></strong>"?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" id="btnConfirmSubmit" class="btn btn-success">Confirm</button>
+                </div>
             </div>
         </div>
     </div>
@@ -418,7 +439,7 @@
                     const stepperWrapper = document.querySelector('.sticky-stepper-wrapper');
                     if (stepperWrapper) {
                         stepperWrapper.setAttribute('tabindex', '-1'); 
-                        stepperWrapper.focus({ preventScroll: false }); // Paksa pandangan melompat ke elemen ini
+                        stepperWrapper.focus({ preventScroll: false });
                         stepperWrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }
 
@@ -446,7 +467,6 @@
                 }
             }
 
-            // PERBAIKAN EVENT DELEGATION: Menggunakan delegasi tingkat dokumen agar tombol delete dari backend tetap merespons modal
             $(document).on("click", "[data-toggle='modal'][data-target='#modalDeleteConfirmation']", function (e) {
                 e.preventDefault();
                 const button = $(this);
@@ -458,7 +478,6 @@
                 $("#btn-delete-confirmation").attr("href", deleteUrl);
             });
 
-            // Logika kontrol input dinamis Step 3 berdasarkan tipe API dari Step 1
             window.toggleApiFields = function (selectedValue) {
                 const isVA = selectedValue === 'Virtual Account SNAP';
                 
@@ -524,6 +543,25 @@
             );
             observer.observe(wrapper);
         }
+
+        $('#btnSaveTrigger').on('click', function () {
+            const form = $(this).closest('form')[0];
+            
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const institutionName = $('#projectName').val();
+            $('#nama-institusi-modal').text(institutionName);
+
+            $('#modalSaveConfirmation').modal('show');
+        });
+
+        $('#btnConfirmSubmit').on('click', function () {
+            $(this).closest('modal').modal('hide');
+            $('form').submit();
+        });
     </script>
 </body>
 </html>

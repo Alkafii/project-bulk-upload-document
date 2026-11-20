@@ -1,3 +1,6 @@
+/* ==========================================
+   1. CUSTOM FILE UPLOAD SECTION
+   ========================================== */
 .custom-file {
   position: relative;
   width: 100%;
@@ -41,6 +44,31 @@
   background-color: #f0f6ff;
 }
 
+
+/* ==========================================
+   2. FORM STEP SECTIONS
+   ========================================== */
+.form-step-section {
+  display: none;
+}
+
+.form-step-section.active {
+  display: block;
+}
+
+
+/* ==========================================
+   3. STEPPER LAYOUT & ITEMS (KONDISI AWAL)
+   ========================================== */
+.sticky-stepper-wrapper {
+  position: sticky;
+  top: 0;
+  z-index: 1020;
+  padding: 20px 0 !important; /* Mencegah penebalan luar pembungkus saat scroll */
+  margin-bottom: 15px;
+  background-color: transparent;
+}
+
 .stepper-container {
   display: flex;
   justify-content: space-between;
@@ -56,6 +84,9 @@
     background-color 0.3s ease,
     color 0.3s ease,
     box-shadow 0.3s ease;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .stepper-item {
@@ -85,6 +116,18 @@
   color: #6c757d;
 }
 
+.step-line {
+  flex-grow: 1;
+  height: 2px;
+  background-color: #eaecf0;
+  margin: 0 15px;
+  max-width: 60px;
+}
+
+
+/* ==========================================
+   4. STEPPER STATUS COLORS (ACTIVE & COMPLETED)
+   ========================================== */
 .stepper-item.active .step-counter {
   background-color: #007bff;
   color: #fff;
@@ -104,33 +147,31 @@
   color: #28a745;
 }
 
-.step-line {
-  flex-grow: 1;
-  height: 2px;
-  background-color: #eaecf0;
-  margin: 0 15px;
-  max-width: 60px;
-}
 
-.sticky-stepper-wrapper {
-  position: sticky;
-  top: 0;
-  z-index: 1020;
-  background-color: transparent;
-  padding: 15px 0;
-  margin-bottom: 15px;
-}
-
+/* ==========================================
+   5. STYLING SAAT STICKY (BACKGROUND HITAM)
+   ========================================== */
 .stepper-container.is-sticky {
   background-color: #1a252f !important;
   color: #ffffff !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  border-radius: 0 0 8px 8px;
-  padding: 10px 15px;
   border-color: #334155 !important;
+  
+  /* FIX: Mengunci kelengkungan 4 sudut & ketebalan agar persis seperti box putih */
+  border-radius: 8px !important;
+  padding: 14px 24px !important; 
+  margin: 0 auto !important;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.15),
+    0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+  
+  /* FIX: Mengunci sebaran flexbox agar jarak horizontal tulisan tidak melar jauh */
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
   transition: all 0.3s ease;
 }
 
+/* Warna font saat kondisi sticky hitam aktif */
 .stepper-container.is-sticky .step-name {
   color: #ffffff !important;
 }
@@ -143,10 +184,12 @@
   color: #28a745 !important;
 }
 
+/* Warna garis penghubung saat sticky */
 .stepper-container.is-sticky .step-line {
   background-color: #334155 !important;
 }
 
+/* Elemen counter lingkaran saat sticky */
 .stepper-container.is-sticky .step-counter {
   background-color: #334155 !important;
   color: #94a3b8 !important;
@@ -163,17 +206,7 @@
   color: #fff !important;
 }
 
-.form-step-section {
-  display: none;
-}
-
-.form-step-section.active {
-  display: block;
-}
-
-.stepper-container.is-sticky
-  .stepper-item:not(.active):not(.completed)
-  .step-counter {
+.stepper-container.is-sticky .stepper-item:not(.active):not(.completed) .step-counter {
   background-color: #34495e !important;
   color: #ffffff !important;
 }

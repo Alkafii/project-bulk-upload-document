@@ -40,7 +40,7 @@ router.get("/", checkAuth, async (req, res) => {
           tableData += `<div class="row no-gutters p-3 text-center align-items-center border-bottom" style="font-size: 0.9rem; background-color: #fff;">
                             <div class="col-1 d-flex align-items-center justify-content-start pl-3">
                                 <div style="width: 32px;" class="text-left">
-                                    <input type="checkbox" id="check_${dataDb[i].id}" class="check" checked />
+                                    <input type="checkbox" id="check_${dataDb[i].id}" class="check" value="${dataDb[i].id}" data-name="${dataDb[i].name}" />
                                 </div>
                                 <span class="font-weight-bold text-muted pl-1">${i + 1}</span>
                             </div>
@@ -49,14 +49,8 @@ router.get("/", checkAuth, async (req, res) => {
                             <div class="col-2 text-left text-dark">${String(dataDb[i].created_at).slice(0, 24)}</div>
                             <div class="col-2 text-left text-dark">${String(dataDb[i].updated_at).slice(0, 24)}</div>
                             <div class="col-1 text-center font-weight-bold">${filesArray.length}/${targetDocument}</div>
-                            <div class="col-1 dropdown">
-                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle py-0 px-2" type="button" data-toggle="dropdown" style="font-size: 0.8rem;">
-                                    Action
-                                </button>
-                                <div class="dropdown-menu dropdown-menu-right">
-                                    <a class="dropdown-item" href="/read_data?id=${dataDb[i].id}">View</a>
-                                    <button type="button" class="dropdown-item text-danger" data-toggle="modal" data-target="#deleteModal" data-id="${dataDb[i].id}" data-name="${dataDb[i].name}">Delete</button>
-                                </div>
+                            <div class="col-1">
+                                <a class="btn btn-outline-primary btn-sm" href="/read_data?id=${dataDb[i].id}">View</a>
                             </div>
                         </div>`;
         }
@@ -169,7 +163,7 @@ router.get("/read_data", checkAuth, async (req, res) => {
                                 ${foundFileName}
                               </label>
                            </div>
-                          <small class="form-text text-muted">Document has been saved, click <a href="/download_file?id=${id}&fileName=${foundFileName}" target="_blank" class="font-weight-bold text-primary"> here </a> to download this document.</small>`;
+                           <small class="form-text text-muted"> Document has been saved. Click <a href="/view_file?id=${id}&fileName=${foundFileName}" target="_blank" class="font-weight-bold text-primary">here to view</a></a> this document.</small>`;
       } else {
         fields[docName] = `<div class="custom-file">
                               <input type="file" class="custom-file-input" name="${docName}" id="doc_${i}" accept=".pdf,.doc,.docx,.xls,.xlsx" disabled>
@@ -199,6 +193,84 @@ router.get("/read_data", checkAuth, async (req, res) => {
   } catch (err) {
     console.error("Error pada rute read_data:", err);
     res.status(500).send("Terjadi kesalahan pada sistem.");
+  }
+});
+
+
+
+router.get("/view_file", checkAuth, async (req, res) => {
+  try {
+    const id = req.query.id;
+    const fileName = req.query.fileName;
+
+    if (typeof id === "undefined" || id === "") {
+      return res.status(400).send("ID data tidak valid.");
+    }
+
+    if (!fileName || typeof fileName !== "string") {
+      return res.status(400).send("Nama file wajib diisi.");
+    }
+
+    if (path.basename(fileName) !== fileName) {
+      return res.status(400).send("Nama file tidak valid.");
+    }
+
+    const dataDb = (await db.query("SELECT * FROM upload_document WHERE id = $1", [id])).rows;
+
+    if (dataDb.length === 0) {
+      return res.status(404).send("Data integrasi tidak ditemukan.");
+    }
+
+    const targetData = dataDb[0];
+    let uploadedFiles = [];
+
+    try {
+      uploadedFiles = typeof targetData.uploaded_files === "string" ? JSON.parse(targetData.uploaded_files) : targetData.uploaded_files || [];
+    } catch (err) {
+      console.error("Format uploaded_files tidak valid:", err);
+      return res.status(500).send("Data dokumen pada database tidak valid.");
+    }
+
+    if (!uploadedFiles.includes(fileName)) {
+      return res.status(404).send("Dokumen tidak terdaftar pada integrasi ini.");
+    }
+
+    const savedFolderName = targetData.folder_name;
+    const baseFolder = path.resolve(process.cwd(), "data", "uploaded_file");
+    const absoluteFilePath = path.resolve(baseFolder, savedFolderName, fileName);
+
+    const relativeFile = path.relative(baseFolder, absoluteFilePath);
+    if (!relativeFile || relativeFile === ".." || relativeFile.startsWith(`..${path.sep}`) || path.isAbsolute(relativeFile)) {
+      return res.status(403).send("Akses dokumen ditolak.");
+    }
+
+    try {
+      const fileStat = await fs.promises.stat(absoluteFilePath);
+      if (!fileStat.isFile()) {
+        return res.status(404).send("Berkas tidak ditemukan.");
+      }
+
+      const ext = path.extname(fileName).toLowerCase();
+      let contentType = "application/octet-stream";
+      
+      if (ext === ".pdf") contentType = "application/pdf";
+      else if (ext === ".docx") contentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+      else if (ext === ".doc") contentType = "application/msword";
+      else if (ext === ".xlsx") contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      else if (ext === ".xls") contentType = "application/vnd.ms-excel";
+
+      res.setHeader("Content-Type", contentType);
+      res.setHeader("Content-Disposition", `inline; filename="${fileName}"`);
+      
+      const fileStream = fs.createReadStream(absoluteFilePath);
+      fileStream.pipe(res);
+
+    } catch (err) {
+      return res.status(404).send("Berkas fisik tidak ditemukan di dalam folder penyimpanan server.");
+    }
+  } catch (err) {
+    console.error("Error pada view_file:", err);
+    res.status(500).send("Terjadi kesalahan sistem saat memproses penampilan berkas.");
   }
 });
 
@@ -407,91 +479,6 @@ router.post("/update_data", upload.fields(UPLOAD_FIELDS), checkAuth, async (req,
   }
 });
 
-
-router.get("/download_file", checkAuth, async (req, res) => {
-  try {
-    const id = req.query.id;
-    const fileName = req.query.fileName;
-
-    if (typeof id === "undefined" || id === "") {
-      return res.status(400).send("ID data tidak valid.");
-    }
-
-    if (!fileName || typeof fileName !== "string") {
-      return res.status(400).send("Nama file wajib diisi.");
-    }
-
-    if (path.basename(fileName) !== fileName) {
-      return res.status(400).send("Nama file tidak valid.");
-    }
-
-    const dataDb = (await db.query("SELECT * FROM upload_document WHERE id = $1", [id])).rows;
-
-    if (dataDb.length === 0) {
-      return res.status(404).send("Data integrasi tidak ditemukan.");
-    }
-
-    const targetData = dataDb[0];
-
-    let uploadedFiles = [];
-
-    try {
-      uploadedFiles = typeof targetData.uploaded_files === "string" ? JSON.parse(targetData.uploaded_files) : targetData.uploaded_files || [];
-    } catch (err) {
-      console.error("Format uploaded_files tidak valid:", err);
-      return res.status(500).send("Data dokumen pada database tidak valid.");
-    }
-
-    if (!Array.isArray(uploadedFiles)) {
-      return res.status(500).send("Data dokumen tidak valid.");
-    }
-
-    if (!uploadedFiles.includes(fileName)) {
-      return res.status(404).send("Dokumen tidak terdaftar pada integrasi ini.");
-    }
-
-    const savedFolderName = targetData.folder_name;
-
-    if (!savedFolderName || typeof savedFolderName !== "string" || savedFolderName !== path.basename(savedFolderName) || savedFolderName === "." || savedFolderName === "..")
-    {
-      return res.status(400).send("Nama folder penyimpanan tidak valid.");
-    }
-
-    const baseFolder = path.resolve(process.cwd(), "data", "uploaded_file");
-    const absoluteFilePath = path.resolve(baseFolder, savedFolderName, fileName);
-
-    const relativeFile = path.relative(baseFolder, absoluteFilePath);
-
-    if (!relativeFile || relativeFile === ".." || relativeFile.startsWith(`..${path.sep}`) || path.isAbsolute(relativeFile))
-    {
-      return res.status(403).send("Akses unduhan dokumen ditolak.");
-    }
-
-    try {
-      const fileStat = await fs.promises.stat(absoluteFilePath);
-
-      if (!fileStat.isFile()) {
-        return res.status(404).send("Berkas tidak ditemukan.");
-      }
-
-      return res.download(absoluteFilePath, fileName, (err) => {
-        if (err) {
-          console.error("Gagal mengunduh file:", err);
-
-          if (!res.headersSent) {
-            return res.status(500).send("Gagal mengunduh dokumen.");
-          }
-        }
-      });
-
-    } catch (err) {
-      return res.status(404).send("Berkas fisik tidak ditemukan di dalam folder penyimpanan server.");
-    }
-  } catch (err) {
-    console.error("Error pada download_file:", err);
-    res.status(500).send("Terjadi kesalahan sistem saat memproses unduhan berkas.");
-  }
-});
 
 
 router.get("/delete", checkAuth, async (req, res) => {
