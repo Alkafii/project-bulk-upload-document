@@ -3,6 +3,7 @@ import db from "../config/database.js";
 import path from "path";
 import fs from "fs";
 import bcrypt from "bcrypt";
+import { randomUUID } from "node:crypto";
 
 import {
   REQUIRED_DOCUMENTS,
@@ -17,6 +18,49 @@ import {
 import { MAX_MB, MAX_FILE_SIZE } from "../config/uploadConfig.js";
 
 const router = express.Router();
+
+
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+async function unlinkWithRetry(filePath, attempts = 4) {
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      await fs.promises.unlink(filePath);
+      return;
+    } catch (err) {
+      if (err.code === "ENOENT") return;
+
+      if (attempt === attempts) throw err;
+
+      await sleep(200 * attempt);
+    }
+  }
+}
+
+async function removeDirectoryWithRetry(folderPath) {
+  await fs.promises.rm(folderPath, {
+    recursive: true,
+    force: true,
+    maxRetries: 5,
+    retryDelay: 200
+  });
+}
+
+function resolveSafePath(basePath, ...segments) {
+  const resolvedBase = path.resolve(basePath);
+  const resolvedTarget = path.resolve(resolvedBase, ...segments);
+  const relativePath = path.relative(resolvedBase, resolvedTarget);
+
+  if (
+    !relativePath ||
+    relativePath.startsWith("..") ||
+    path.isAbsolute(relativePath)
+  ) {
+    throw new Error("INVALID_PATH");
+  }
+
+  return resolvedTarget;
+}
 
 
 router.get("/", checkAuth, async (req, res) => {
@@ -277,72 +321,183 @@ router.get("/view_file", checkAuth, async (req, res) => {
 
 
 router.get("/delete_file", checkAuth, async (req, res) => {
-  try {
-    const id = req.query.id;
-    const fileName = req.query.fileName;
+  const { id, fileName } = req.query;
 
-    if (!id || !fileName) {
+  let client;
+  let transactionStarted = false;
+  let committed = false;
+
+  let sourcePath = null;
+  let quarantinePath = null;
+  let movedToQuarantine = false;
+
+  try {
+    if (!id || typeof id !== "string" ||
+        !fileName || typeof fileName !== "string") {
       return res.status(400).send("ID dan nama file wajib diisi.");
     }
 
-    const dataDb = (await db.query("SELECT folder_name, uploaded_files FROM upload_document WHERE id = $1", [id])).rows;
+    if (
+      fileName !== path.basename(fileName) ||
+      fileName.includes("/") ||
+      fileName.includes("\\") ||
+      fileName.startsWith(".")
+    ) {
+      return res.status(400).send("Nama file tidak valid.");
+    }
 
-    if (dataDb.length === 0) {
+    client = await db.connect();
+
+    await client.query("BEGIN");
+    transactionStarted = true;
+
+    const result = await client.query(
+      `SELECT folder_name, uploaded_files
+       FROM upload_document
+       WHERE id = $1
+       FOR UPDATE`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      await client.query("ROLLBACK");
+      transactionStarted = false;
+
       return res.status(404).send("Data integrasi tidak ditemukan.");
     }
 
-    const folderName = dataDb[0].folder_name;
-    const date = new Date().toLocaleString("sv-SE");
+    const { folder_name, uploaded_files } = result.rows[0];
 
-    if (!folderName) {
-      return res.status(400).send("Folder penyimpanan tidak ditemukan.");
+    if (
+      !folder_name ||
+      folder_name !== path.basename(folder_name) ||
+      folder_name.includes("/") ||
+      folder_name.includes("\\")
+    ) {
+      throw new Error("INVALID_FOLDER");
     }
 
-    const targetData = dataDb[0].uploaded_files;
+    let uploadedDocuments = [];
 
-    const arrayFile =
-      typeof targetData === "string" ? JSON.parse(targetData) : targetData || [];
+    try {
+      uploadedDocuments = typeof uploaded_files === "string"
+        ? JSON.parse(uploaded_files)
+        : uploaded_files || [];
+    } catch {
+      throw new Error("INVALID_DOCUMENT_DATA");
+    }
 
-    if (!arrayFile.includes(fileName)) {
+    if (!Array.isArray(uploadedDocuments)) {
+      throw new Error("INVALID_DOCUMENT_DATA");
+    }
+
+    if (!uploadedDocuments.includes(fileName)) {
+      await client.query("ROLLBACK");
+      transactionStarted = false;
+
       return res.status(404).send("Dokumen tidak ditemukan.");
     }
 
-    if (path.basename(folderName) !== folderName || path.basename(fileName) !== fileName) {
-      return res.status(400).send("Nama folder atau file tidak valid.");
+    const baseFolder = path.resolve(
+      process.cwd(),
+      "data",
+      "uploaded_file"
+    );
+
+    const folderPath = resolveSafePath(baseFolder, folder_name);
+    sourcePath = resolveSafePath(folderPath, fileName);
+
+    quarantinePath = path.join(
+      folderPath,
+      `.deleting-${randomUUID()}`
+    );
+
+    try {
+      await fs.promises.rename(sourcePath, quarantinePath);
+      movedToQuarantine = true;
+    } catch (err) {
+      if (err.code !== "ENOENT") {
+        throw err;
+      }
     }
 
-    const baseFolder = path.resolve(process.cwd(), "data", "uploaded_file");
-    const folderPath = path.resolve(baseFolder, folderName);
-    const filePath = path.resolve(folderPath, fileName);
+    const updatedDocuments = uploadedDocuments.filter(
+      file => file !== fileName
+    );
 
-    const relativeFolder = path.relative(baseFolder, folderPath);
-    const relativeFile = path.relative(folderPath, filePath);
+    await client.query(
+      `UPDATE upload_document
+       SET uploaded_files = $1,
+           updated_at = $2
+       WHERE id = $3`,
+      [
+        JSON.stringify(updatedDocuments),
+        new Date().toLocaleString("sv-SE"),
+        id
+      ]
+    );
 
-    if (
-      relativeFolder.startsWith("..") ||
-      path.isAbsolute(relativeFolder) ||
-      relativeFile.startsWith("..") ||
-      path.isAbsolute(relativeFile)
-    ) {
+    await client.query("COMMIT");
+    committed = true;
+    transactionStarted = false;
+
+    if (movedToQuarantine) {
+      try {
+        await unlinkWithRetry(quarantinePath);
+      } catch (cleanupError) {
+        console.error(
+          "File quarantine belum berhasil dibersihkan:",
+          quarantinePath,
+          cleanupError
+        );
+      }
+    }
+
+    req.flash("success", "Dokumen berhasil dihapus!");
+    return res.redirect(`/update_data?id=${encodeURIComponent(id)}`);
+
+  } catch (err) {
+    console.error("Error DELETE FILE:", err);
+
+    if (client && transactionStarted && !committed) {
+      try {
+        await client.query("ROLLBACK");
+      } catch (rollbackError) {
+        console.error("Rollback gagal:", rollbackError);
+      }
+
+      transactionStarted = false;
+    }
+
+    if (movedToQuarantine && !committed) {
+      try {
+        await fs.promises.rename(quarantinePath, sourcePath);
+      } catch (restoreError) {
+        console.error(
+          "PERHATIAN: Gagal mengembalikan file:",
+          restoreError
+        );
+      }
+    }
+
+    if (err.message === "INVALID_PATH") {
       return res.status(403).send("Akses file ditolak.");
     }
 
-    await fs.promises.unlink(filePath);
-
-    const updatedFiles = arrayFile.filter((file) => file !== fileName);
-
-    await db.query("UPDATE upload_document SET updated_at = $1, uploaded_files = $2 WHERE id = $3", [date, JSON.stringify(updatedFiles), id]);
-
-    req.flash("success", "Dokumen berhasil dihapus dari server!");
-    return res.redirect(`/update_data?id=${id}`);
-  } catch (err) {
-    console.error("Error pada route delete_file:", err);
-
-    if (err.code === "ENOENT") {
-      return res.status(404).send("File fisik tidak ditemukan.");
+    if (err.message === "INVALID_FOLDER") {
+      return res.status(400).send("Nama folder tidak valid.");
     }
 
-    res.status(500).send("Terjadi kesalahan pada sistem.");
+    if (err.message === "INVALID_DOCUMENT_DATA") {
+      return res.status(500).send("Data dokumen di database tidak valid.");
+    }
+
+    return res.status(500).send(
+      "Gagal menghapus dokumen. Silakan periksa log server."
+    );
+
+  } finally {
+    if (client) client.release();
   }
 });
 
@@ -481,53 +636,158 @@ router.post("/update_data", upload.fields(UPLOAD_FIELDS), checkAuth, async (req,
 
 
 
-router.get("/delete", checkAuth, async (req, res) => {
-  try{
-    const id = req.query.id;
 
-    if (typeof id === "undefined" || id === "") {
+router.get("/delete", checkAuth, async (req, res) => {
+  const { id } = req.query;
+
+  let client;
+  let transactionStarted = false;
+  let committed = false;
+
+  let originalFolder = null;
+  let quarantineFolder = null;
+  let movedToQuarantine = false;
+
+  try {
+    if (!id || typeof id !== "string") {
       return res.status(400).send("ID data tidak valid.");
     }
 
-    const dataDb = (await db.query("SELECT folder_name FROM upload_document WHERE id = $1", [id])).rows;
+    client = await db.connect();
 
-    if(dataDb.length === 0) {
-      return res.status(404).json({ message: 'Data integrasi tidak ditemukan!' });
+    await client.query("BEGIN");
+    transactionStarted = true;
+
+    const result = await client.query(
+      `SELECT folder_name
+       FROM upload_document
+       WHERE id = $1
+       FOR UPDATE`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      await client.query("ROLLBACK");
+      transactionStarted = false;
+
+      return res.status(404).send(
+        "Data integrasi tidak ditemukan."
+      );
     }
 
-    const folderName = dataDb[0].folder_name;
+    const folderName = result.rows[0].folder_name;
 
-    if (!folderName) {
-      console.error('Folder penyimpanan tidak ditemukan:', { folderName });
-      return res.status(400).json({ message: 'folderName wajib dikirim!' });
-
-    } else {
-      if (path.basename(folderName) !== folderName) {
-        return res.status(400).send("Nama folder atau file tidak valid.");
-      }
-      
-      const baseFolder = path.resolve(process.cwd(), "data", "uploaded_file");
-      const folderPath = path.resolve(baseFolder, folderName);
-      const relativeFolder = path.relative(baseFolder, folderPath);
-
+    if (folderName) {
       if (
-        !relativeFolder || relativeFolder.startsWith("..") || path.isAbsolute(relativeFolder)
+        folderName !== path.basename(folderName) ||
+        folderName.includes("/") ||
+        folderName.includes("\\")
       ) {
-        return res.status(403).send("Akses file ditolak.");
+        throw new Error("INVALID_FOLDER");
       }
 
-      await fs.promises.rm(folderPath, { recursive: true, force: true });
+      const baseFolder = path.resolve(
+        process.cwd(),
+        "data",
+        "uploaded_file"
+      );
 
-      await db.query("DELETE FROM upload_document WHERE id = $1", [id]);
+      originalFolder = resolveSafePath(
+        baseFolder,
+        folderName
+      );
 
-      req.flash("success", "Mitra berhasil dihapus!");
-      return res.redirect("/");
+      quarantineFolder = path.join(
+        baseFolder,
+        `.deleting-${randomUUID()}`
+      );
+
+      try {
+        await fs.promises.rename(
+          originalFolder,
+          quarantineFolder
+        );
+
+        movedToQuarantine = true;
+
+      } catch (err) {
+
+        if (err.code !== "ENOENT") {
+          throw err;
+        }
+      }
     }
-  } catch(err) {
-    console.error("Error pada route /delete:", err);
-    res.status(500).send("Terjadi kesalahan sistem pada route /delete.");
+
+    await client.query(
+      "DELETE FROM upload_document WHERE id = $1",
+      [id]
+    );
+
+    await client.query("COMMIT");
+    committed = true;
+    transactionStarted = false;
+
+    if (movedToQuarantine) {
+      try {
+        await removeDirectoryWithRetry(quarantineFolder);
+      } catch (cleanupError) {
+        console.error(
+          "Folder quarantine belum berhasil dibersihkan:",
+          quarantineFolder,
+          cleanupError
+        );
+      }
+    }
+
+    req.flash("success", "Mitra berhasil dihapus!");
+
+    return res.redirect("/");
+
+  } catch (err) {
+    console.error("Error DELETE INTEGRATION:", err);
+
+    if (client && transactionStarted && !committed) {
+      try {
+        await client.query("ROLLBACK");
+      } catch (rollbackError) {
+        console.error("Rollback gagal:", rollbackError);
+      }
+
+      transactionStarted = false;
+    }
+
+    if (movedToQuarantine && !committed) {
+      try {
+        await fs.promises.rename(
+          quarantineFolder,
+          originalFolder
+        );
+      } catch (restoreError) {
+        console.error(
+          "PERHATIAN: Gagal mengembalikan folder:",
+          restoreError
+        );
+      }
+    }
+
+    if (err.message === "INVALID_PATH") {
+      return res.status(403).send("Akses folder ditolak.");
+    }
+
+    if (err.message === "INVALID_FOLDER") {
+      return res.status(400).send("Nama folder tidak valid.");
+    }
+
+    return res.status(500).send(
+      "Gagal menghapus data integrasi. Silakan periksa log server."
+    );
+
+  } finally {
+    if (client) client.release();
   }
 });
+
+
 
 router.get("/login", isAlreadyLoggedIn, async (req, res) => {
   res.render("login.ejs");
