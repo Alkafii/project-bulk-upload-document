@@ -1,15 +1,31 @@
+import db from "./database.js";
+
 import INTEGRATION_DOCUMENT from "./document/integrationDocument.js";
 import ASPI_DOCUMENT from "./document/aspiDocument.js";
-
-import {
-    VIRTUAL_ACCOUNT_OFF_US_DOCUMENT,
-    VIRTUAL_ACCOUNT_ON_US_DOCUMENT
-} from "./document/API/Virtual Account SNAP.js";
-
-import {QRIS_DOCUMENT} from "./document/API/QRIS SNAP.js";
 import UJI_FUNGSI_DOCUMENT from "./document/ujiFungsiDocument.js";
 
-const createDocumentFields = (documents, prefix, isApi = false) => {
+// Mengubah data dari database menjadi array nama dokumen.
+function normalizeDocuments(value) {
+    if (Array.isArray(value)) {
+        return value.map(item => String(item).trim()).filter(Boolean);
+    }
+
+    if (typeof value === "string") {
+        try {
+            const parsed = JSON.parse(value);
+
+            if (Array.isArray(parsed)) {
+                return parsed.map(item => String(item).trim()).filter(Boolean);
+            }
+        } catch {
+            throw new Error("Format document_names pada database tidak valid.");
+        }
+    }
+
+    return [];
+}
+
+function createDocumentFields(documents, prefix, isApi = false) {
     return documents.map((name, index) => ({
         name,
         id: `${prefix}_${index}`,
@@ -17,64 +33,71 @@ const createDocumentFields = (documents, prefix, isApi = false) => {
             ? name.replace(/^\d+ - API /, "").replace(/ - /g, " · ")
             : name.replace(/_/g, " ")
     }));
-};
+}
 
-export const DOCUMENT_FORM = {
-    integration: createDocumentFields(
-        INTEGRATION_DOCUMENT,
-        "integration"
-    ),
+// Dipanggil setiap request yang membutuhkan konfigurasi dokumen.
+export async function getDocumentConfig() {
+    const result = await db.query(
+        `SELECT name, document_names
+         FROM document_name
+         WHERE name = ANY($1::text[])`,
+        [[
+            "VA SNAP Off Us",
+            "VA SNAP On Us",
+            "QRIS MPM SNAP"
+        ]]
+    );
 
-    aspi: createDocumentFields(
-        ASPI_DOCUMENT,
-        "aspi"
-    ),
+    const documentsByCategory = {};
 
-    devsite: {
-        vaOff: createDocumentFields(
-            VIRTUAL_ACCOUNT_OFF_US_DOCUMENT,
-            "va_off",
-            true
-        ),
+    for (const row of result.rows) {
+        documentsByCategory[row.name] = normalizeDocuments(row.document_names);
+    }
 
-        vaOn: createDocumentFields(
-            VIRTUAL_ACCOUNT_ON_US_DOCUMENT,
-            "va_on",
-            true
-        ),
+    const vaOff = documentsByCategory["VA SNAP Off Us"] || [];
+    const vaOn = documentsByCategory["VA SNAP On Us"] || [];
+    const qris = documentsByCategory["QRIS MPM SNAP"] || [];
 
-        qris: createDocumentFields(
-            QRIS_DOCUMENT,
-            "qris",
-            true
+    const documentForm = {
+        integration: createDocumentFields(INTEGRATION_DOCUMENT, "integration"),
+        aspi: createDocumentFields(ASPI_DOCUMENT, "aspi"),
+
+        devsite: {
+            vaOff: createDocumentFields(vaOff, "va_off", true),
+            vaOn: createDocumentFields(vaOn, "va_on", true),
+            qris: createDocumentFields(qris, "qris", true)
+        },
+
+        functionality: createDocumentFields(
+            UJI_FUNGSI_DOCUMENT,
+            "functionality"
         )
-    },
+    };
 
-    functionality: createDocumentFields(
-        UJI_FUNGSI_DOCUMENT,
-        "functionality"
-    )
-};
+    const requiredDocuments = [
+        ...INTEGRATION_DOCUMENT,
+        ...ASPI_DOCUMENT,
+        ...vaOff,
+        ...vaOn,
+        ...qris,
+        ...UJI_FUNGSI_DOCUMENT
+    ];
 
-export const REQUIRED_DOCUMENTS = [
-    ...INTEGRATION_DOCUMENT,
-    ...ASPI_DOCUMENT,
-    ...VIRTUAL_ACCOUNT_OFF_US_DOCUMENT,
-    ...VIRTUAL_ACCOUNT_ON_US_DOCUMENT,
-    ...QRIS_DOCUMENT,
-    ...UJI_FUNGSI_DOCUMENT
-];
+    // Multer membutuhkan nama field yang unik.
+    const uniqueDocuments = [...new Set(requiredDocuments)];
 
-export const UPLOAD_FIELDS = REQUIRED_DOCUMENTS.map(name => ({
-    name,
-    maxCount: 1
-}));
+    if (uniqueDocuments.length !== requiredDocuments.length) {
+        throw new Error("Ditemukan nama field dokumen yang duplikat.");
+    }
 
+    const uploadFields = uniqueDocuments.map(name => ({
+        name,
+        maxCount: 1
+    }));
 
-
-
-
-
-
-
-
+    return {
+        documentForm,
+        requiredDocuments: uniqueDocuments,
+        uploadFields
+    };
+}

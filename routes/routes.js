@@ -5,11 +5,7 @@ import fs from "fs";
 import bcrypt from "bcrypt";
 import { randomUUID } from "node:crypto";
 
-import {
-    REQUIRED_DOCUMENTS,
-    UPLOAD_FIELDS,
-    DOCUMENT_FORM
-} from "../config/documentFields.js";
+import { getDocumentConfig } from "../config/documentFields.js";
 
 
 import { 
@@ -21,6 +17,17 @@ import { MAX_MB, MAX_FILE_SIZE } from "../config/uploadConfig.js";
 
 const router = express.Router();
 
+async function dynamicUploadFields(req, res, next) {
+    try {
+        const { uploadFields } = await getDocumentConfig();
+
+        // Membuat konfigurasi Multer terbaru untuk request ini.
+        upload.fields(uploadFields)(req, res, next);
+
+    } catch (err) {
+        next(err);
+    }
+}
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -67,6 +74,13 @@ function resolveSafePath(basePath, ...segments) {
 
 router.get("/", checkAuth, async (req, res) => {
   try {
+    const { documentForm } = await getDocumentConfig();
+
+    const baseDocumentCount =
+      documentForm.integration.length +
+      documentForm.aspi.length +
+      documentForm.functionality.length;   
+
       const dataDb = (await db.query("SELECT * FROM upload_document ORDER BY id ASC")).rows;
       let tableData = "";
 
@@ -81,7 +95,16 @@ router.get("/", checkAuth, async (req, res) => {
       if(dataDb.length > 0) {
         for(let i = 0; i < dataDb.length; i++) {
           const totalDocument = dataDb[i];
-          const targetDocument = (totalDocument.va_type === "Off Us" || totalDocument.api_name === "QRIS MPM SNAP") ? 20 : 22;
+
+          let targetDocument;
+          if (totalDocument.api_name === "QRIS MPM SNAP") {
+              targetDocument = baseDocumentCount + documentForm.devsite.qris.length;
+          } else if (totalDocument.va_type === "Off Us") {
+              targetDocument = baseDocumentCount + documentForm.devsite.vaOff.length;
+          } else {
+              targetDocument = baseDocumentCount + documentForm.devsite.vaOn.length;
+          }
+
           const filesArray = typeof totalDocument.uploaded_files === "string" ? JSON.parse(totalDocument.uploaded_files) : (totalDocument.uploaded_files || []);
           tableData += `<div class="row no-gutters p-3 text-center align-items-center border-bottom" style="font-size: 0.9rem; background-color: #fff;">
                             <div class="col-1 d-flex align-items-center justify-content-start pl-3">
@@ -113,25 +136,30 @@ router.get("/", checkAuth, async (req, res) => {
 });
 
 
-router.get("/upload", checkAuth, (req, res) => {
-  try {
-    res.render("upload.ejs", {
-        message: req.flash("success")[0] || "",
-        errorMessage: req.flash("error")[0] || "",
+router.get("/upload", checkAuth, async (req, res) => {
+    try {
+        const { documentForm } = await getDocumentConfig();
 
-        maxMB: MAX_MB,
-        maxFileSize: MAX_FILE_SIZE,
+        res.render("upload.ejs", {
+            message: req.flash("success")[0] || "",
+            errorMessage: req.flash("error")[0] || "",
 
-        documentForm: DOCUMENT_FORM
-    });
-  } catch(err) {
-      console.log(err);
-      res.status(500).send("Terjadi kesalahan pada server. Silakan coba beberapa saat lagi.");
-  }
+            maxMB: MAX_MB,
+            maxFileSize: MAX_FILE_SIZE,
+
+            documentForm
+        });
+
+    } catch (err) {
+        console.error("Error GET /upload:", err);
+        res.status(500).send(
+            "Terjadi kesalahan saat mengambil konfigurasi dokumen."
+        );
+    }
 });
 
 
-router.post("/upload", checkAuth, upload.fields(UPLOAD_FIELDS), async (req, res) => {
+router.post("/upload", checkAuth, dynamicUploadFields, async (req, res) => {
   try {
       if (!req.files || Object.keys(req.files).length === 0) {
         req.flash("error", "Anda belum upload dokumen!")
@@ -170,6 +198,7 @@ router.post("/upload", checkAuth, upload.fields(UPLOAD_FIELDS), async (req, res)
 
 router.get("/read_data", checkAuth, async (req, res) => {
   try {
+    const { documentForm, requiredDocuments} = await getDocumentConfig();
     const id = req.query.id;
 
     if (!id || id === "") {
@@ -195,8 +224,8 @@ router.get("/read_data", checkAuth, async (req, res) => {
 
     let fields = {};
 
-    for (let i = 0; i < REQUIRED_DOCUMENTS.length; i++) {
-      const docName = REQUIRED_DOCUMENTS[i];
+    for (let i = 0; i < requiredDocuments.length; i++) {
+      const docName = requiredDocuments[i];
 
       const foundFileName = uploaded_file.find(function(file) {
         return file.startsWith(docName);
@@ -234,7 +263,7 @@ router.get("/read_data", checkAuth, async (req, res) => {
       fields: fields,
       maxMB: MAX_MB,
       maxFileSize: MAX_FILE_SIZE,
-      documentForm: DOCUMENT_FORM
+      documentForm: documentForm
     };
 
     res.render("read_data.ejs", data);
@@ -509,6 +538,7 @@ router.get("/delete_file", checkAuth, async (req, res) => {
 
 router.get("/update_data", checkAuth, async (req, res) => {
   try {
+    const { documentForm, requiredDocuments } = await getDocumentConfig();
     const id = req.query.id;
     if (!id || id === "") {
       return res.status(400).send("ID data tidak valid.");
@@ -527,8 +557,8 @@ router.get("/update_data", checkAuth, async (req, res) => {
     }
 
     let fields = {};
-    for (let i = 0; i < REQUIRED_DOCUMENTS.length; i++) {
-      const docName = REQUIRED_DOCUMENTS[i];
+    for (let i = 0; i < requiredDocuments.length; i++) {
+      const docName = requiredDocuments[i];
       const foundFileName = uploaded_file.find(file => file.startsWith(docName));
       
       if (foundFileName) {
@@ -562,7 +592,7 @@ router.get("/update_data", checkAuth, async (req, res) => {
         message: req.flash("success")[0] || "",
         errorMessage: req.flash("error")[0] || "",
         fields: fields,
-        documentForm: DOCUMENT_FORM,
+        documentForm: documentForm,
         maxMB: MAX_MB,
         maxFileSize: MAX_FILE_SIZE
     });
@@ -574,7 +604,7 @@ router.get("/update_data", checkAuth, async (req, res) => {
 });
 
 
-router.post("/update_data", upload.fields(UPLOAD_FIELDS), checkAuth, async (req, res) => {
+router.post("/update_data", checkAuth, dynamicUploadFields, async (req, res) => {
   try {
     const id = req.query.id;
     if (!id || id === "") {
@@ -840,12 +870,6 @@ router.post("/document_names", checkAuth, async (req, res) => {
         const category = req.body.category;
         const documentName = req.body.documentName;
 
-        const allowedCategories = [
-            "VA SNAP Off Us",
-            "VA SNAP On Us",
-            "QRIS MPM SNAP"
-        ];
-
         if (
             typeof category !== "string" ||
             typeof documentName !== "string"
@@ -857,19 +881,11 @@ router.post("/document_names", checkAuth, async (req, res) => {
         const cleanCategory = category.trim();
         const cleanDocumentName = documentName.trim();
 
-        if (!allowedCategories.includes(cleanCategory)) {
-            req.flash("error", "Kategori dokumen tidak valid.");
-            return res.redirect("/document_names");
-        }
-
         if (
             !cleanDocumentName ||
             cleanDocumentName.length > 150
         ) {
-            req.flash(
-                "error",
-                "Nama dokumen wajib diisi dan maksimal 150 karakter."
-            );
+            req.flash("error", "Nama dokumen wajib diisi dan maksimal 150 karakter.");
 
             return res.redirect("/document_names");
         }

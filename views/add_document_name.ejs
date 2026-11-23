@@ -119,7 +119,7 @@
                                 </label>
                                 <select class="form-control" id="documentCategory" name="category" required>
                                     <option value="" selected disabled>Select document category</option>
-                                    
+
                                     <%- documentCategory %>
 
                                 </select>
@@ -137,15 +137,19 @@
                                     sebagai identitas field upload.
                                 </small>
                             </div>
-
                             <div class="d-flex justify-content-end">
                                 <button
-                                    type="reset"class="btn btn-light text-secondary mr-2">Reset
+                                    type="reset"
+                                    class="btn btn-light text-secondary mr-2">
+                                    Reset
                                 </button>
+
                                 <button
-                                    type="button"class="btn btn-primary">Save
+                                    type="submit"
+                                    class="btn btn-primary">
+                                    Save
                                 </button>
-                            </div>
+                            </div>                            
                         </form>
                     </div>
                 </div>
@@ -180,11 +184,11 @@
                                                     <td><%= group.name %></td>
                                                     <td><%= document.name %></td>
                                                     <td class="text-center">
-                                                        <button type="button" class="btn btn-sm btn-outline-secondary" disabled>
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary">
                                                             Edit
                                                         </button>
 
-                                                        <button type="button" class="btn btn-sm btn-outline-danger" disabled>
+                                                        <button type="button" class="btn btn-sm btn-outline-danger">
                                                             Delete
                                                         </button>
                                                     </td>
