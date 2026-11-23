@@ -74,7 +74,7 @@
                                 </select>
                             </div>
 
-                            <h6 class="text-uppercase font-weight-bold text-primary mb-1">
+                            <h6 class="text-uppercase font-weight-bold text-primary mb-1">📁 Dokumen Integrasi</h6>
                             <hr class="mb-3">
                             
                             <%- include('./partials/documentFields.ejs', {
@@ -102,29 +102,40 @@
                             </p>
                         </div>
 
-                        <div id="apiDocumentGroups">
-                            <% documentForm.apiDocuments.forEach(api => { %>
-                                <div class="api-document-group" data-api-name="<%= api.name %>" style="display: none;">
-                                    <h6 class="text-uppercase font-weight-bold text-primary mb-1">
-                                        📋 Dokumen API - <%= api.name %>
-                                    </h6>
-                                    <hr class="mb-3">
+                        <div id="sectionStep3" class="form-step-section">
+                            <h6 class="text-uppercase font-weight-bold text-primary mb-1">📋 Hasil Uji Devsite</h6>
+                            <hr class="mb-3">
+                            <div id="apiDocumentGroups">
+                                <% documentForm.apiDocuments.forEach(api => { %>
+                                    <div class="api-document-group" data-api-name="<%= api.name %>" style="display: none;" >
+                                        <%- include('./partials/documentFields.ejs', {
+                                            documents: api.fields
+                                        }) %>
+                                    </div>
+                                <% }) %>
+                            </div>
 
-                                    <%- include('./partials/documentFields.ejs', {
-                                        documents: api.fields
-                                    }) %>
+                            <div id="noApiSelectedMessage" class="alert alert-warning text-center py-4" style="display: none;" >
+                                <h5>API belum dipilih atau dikonfigurasi.</h5>
+                                <p class="mb-0">
+                                    Silakan kembali ke <strong>Step 1</strong>
+                                    untuk menentukan API Name dan dokumennya.
+                                </p>
+                            </div>
 
-                                </div>
-                            <% }) %>
+                            <hr>
+
+                            <div class="d-flex justify-content-between mb-0">
+                                <button class="btn btn-secondary btn-step-nav" type="button" data-prev="2" style="width: 100px;" >
+                                    Previous
+                                </button>
+
+                                <button class="btn btn-primary btn-step-nav" id="btnNextToStep4" type="button" data-next="4" style="width: 100px;" >
+                                    Next
+                                </button>
+                            </div>
                         </div>
 
-                        <div id="noApiSelectedMessage" class="alert alert-warning text-center py-4" style="display: none;">
-                            <h5>API belum dipilih atau dikonfigurasi.</h5>
-                            <p class="mb-0">
-                                Silakan kembali ke <strong>Step 1</strong>
-                                untuk menentukan API Name dan dokumennya.
-                            </p>
-                        </div>
 
                         <div id="sectionStep4" class="form-step-section">
                             <h6 class="text-uppercase font-weight-bold text-primary mb-1">🗃️ Hasil Uji Fungsionalitas</h6>
