@@ -95,14 +95,15 @@ router.get("/", checkAuth, async (req, res) => {
         for(let i = 0; i < dataDb.length; i++) {
           const totalDocument = dataDb[i];
 
-          let targetDocument;
-          if (totalDocument.api_name === "QRIS MPM SNAP") {
-              targetDocument = baseDocumentCount + documentForm.devsite.qris.length;
-          } else if (totalDocument.va_type === "Off Us") {
-              targetDocument = baseDocumentCount + documentForm.devsite.vaOff.length;
-          } else {
-              targetDocument = baseDocumentCount + documentForm.devsite.vaOn.length;
-          }
+          const selectedApi = documentForm.apiDocuments.find(
+              api => api.name === totalDocument.api_name
+          );
+
+          const apiDocumentCount = selectedApi
+              ? selectedApi.documents.length
+              : 0;
+
+          const targetDocument = baseDocumentCount + apiDocumentCount;
 
           const filesArray = typeof totalDocument.uploaded_files === "string" ? JSON.parse(totalDocument.uploaded_files) : (totalDocument.uploaded_files || []);
           tableData += `<div class="row no-gutters p-3 text-center align-items-center border-bottom" style="font-size: 0.9rem; background-color: #fff;">

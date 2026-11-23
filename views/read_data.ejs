@@ -53,10 +53,10 @@
                         <input type="text" name="integrationType" id="integrationType" class="form-control text-secondary" value="<%= integration %>" disabled>
                     </div>  
 
-                    <% if (integration !== "QRIS MPM SNAP") { %>
-                        <div class="mb-4" id="hidden">
-                            <label>Virtual Account type <span class="font-weight-bold text-danger">*</span></label>
-                            <input type="text" name="vaType" id="vaType" class="form-control text-secondary" value="<%= vaType %>" disabled>
+                    <% if (integration === "Virtual Account SNAP") { %>
+                        <div class="mb-4" id="vaTypeContainer">
+                            <label>Virtual Account type<span class="font-weight-bold text-danger">*</span></label>
+                            <input type="text" name="vaType" id="vaType" class="form-control text-secondary" value="<%= vaType %>" disabled >
                         </div>
                     <% } %>
 
@@ -82,53 +82,47 @@
                     </div>
                     
                     <div class="mt-4" id="openButton">
-                        <% if (vaType === "Off Us") { %>
-                            <div class="mt-4">
-                                <h6 class="text-uppercase font-weight-bold text-primary mb-1">
-                                    📋 Hasil Uji Developer Site VA SNAP Off Us (Pengguna Layanan)
-                                </h6>
-                                <hr class="mb-3">
-                                <%- include('./partials/readDocumentFields.ejs', {
-                                    documents: documentForm.devsite.vaOff,
-                                    fields: fields
-                                }) %>
-                            </div>
-                        <% } %>
 
-                        <% if (vaType === "On Us") { %>
-                            <div class="mt-4">
-                                <h6 class="text-uppercase font-weight-bold text-primary mb-1">
-                                    📋 Hasil Uji Developer Site VA SNAP On Us (Penyedia Layanan)
-                                </h6>
-                                <hr class="mb-3">
-                                <%- include('./partials/readDocumentFields.ejs', {
-                                    documents: documentForm.devsite.vaOn,
-                                    fields: fields
-                                }) %>
-                            </div>
-                        <% } %>
+                        <h6 class="text-uppercase font-weight-bold text-primary mb-1">
+                            📋 Hasil Uji Developer Site - <%= integration %>
+                        </h6>
 
-                        <% if (integration === "QRIS MPM SNAP") { %>
-                            <div class="mt-4">
-                                <h6 class="text-uppercase font-weight-bold text-primary mb-1">
-                                    📋 Hasil Uji Developer Site QRIS MPM SNAP (Penyedia Layanan)
-                                </h6>
-                                <hr class="mb-3">
+                        <hr class="mb-3">
+
+                        <% const selectedApiDocuments = (documentForm.apiDocuments || []).filter(
+                            api => api.name === integration
+                        ); %>
+
+                        <% if (selectedApiDocuments.length > 0) { %>
+
+                            <% selectedApiDocuments.forEach(api => { %>
+
                                 <%- include('./partials/readDocumentFields.ejs', {
-                                    documents: documentForm.devsite.qris,
+                                    documents: api.fields,
                                     fields: fields
                                 }) %>
+
+                            <% }) %>
+
+                        <% } else { %>
+
+                            <div class="alert alert-warning">
+                                Konfigurasi dokumen Developer Site untuk API ini tidak ditemukan.
                             </div>
+
                         <% } %>
 
                         <h6 class="text-uppercase font-weight-bold text-primary mb-1 mt-5">
                             🗃️ Hasil Uji Fungsionalitas
                         </h6>
+
                         <hr class="mb-3">
+
                         <%- include('./partials/readDocumentFields.ejs', {
                             documents: documentForm.functionality,
                             fields: fields
                         }) %>
+
                     </div>
                 </div>
             </div>
