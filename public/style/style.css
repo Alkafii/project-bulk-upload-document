@@ -210,3 +210,50 @@
   background-color: #34495e !important;
   color: #ffffff !important;
 }
+
+.page-title {
+  font-weight: 700;
+  color: #2563eb;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.document-card {
+  border: 0;
+  border-radius: 10px;
+}
+
+.document-table th {
+  background: #2563eb;
+  color: white;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.document-table td {
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.form-label {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.required {
+  color: #dc3545;
+}
+
+@media (max-width: 576px) {
+  .page-content {
+    padding: 16px 10px;
+  }
+
+  .card-body {
+    padding: 16px;
+  }
+}

@@ -4,7 +4,6 @@ import INTEGRATION_DOCUMENT from "./document/integrationDocument.js";
 import ASPI_DOCUMENT from "./document/aspiDocument.js";
 import UJI_FUNGSI_DOCUMENT from "./document/ujiFungsiDocument.js";
 
-// Mengubah data dari database menjadi array nama dokumen.
 function normalizeDocuments(value) {
     if (Array.isArray(value)) {
         return value.map(item => String(item).trim()).filter(Boolean);
@@ -35,7 +34,6 @@ function createDocumentFields(documents, prefix, isApi = false) {
     }));
 }
 
-// Dipanggil setiap request yang membutuhkan konfigurasi dokumen.
 export async function getDocumentConfig() {
     const result = await db.query(
         `SELECT name, document_names
@@ -83,7 +81,6 @@ export async function getDocumentConfig() {
         ...UJI_FUNGSI_DOCUMENT
     ];
 
-    // Multer membutuhkan nama field yang unik.
     const uniqueDocuments = [...new Set(requiredDocuments)];
 
     if (uniqueDocuments.length !== requiredDocuments.length) {
