@@ -6,7 +6,7 @@ import {
     VIRTUAL_ACCOUNT_ON_US_DOCUMENT
 } from "./document/API/Virtual Account SNAP.js";
 
-import QRIS_DOCUMENT from "./document/API/QRIS SNAP.js";
+import {QRIS_DOCUMENT} from "./document/API/QRIS SNAP.js";
 import UJI_FUNGSI_DOCUMENT from "./document/ujiFungsiDocument.js";
 
 const createDocumentFields = (documents, prefix, isApi = false) => {

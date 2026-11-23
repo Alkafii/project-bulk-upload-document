@@ -1,6 +1,6 @@
-export const QRIS_DOCUMENT = [
-          "47 - API Generate QR MPM - Positif", "47 - API Generate QR MPM - Negatif", "51 - API QRIS Check Status - Positif",
-          "51 - API QRIS Check Status - Negatif", "52 - API QRIS Callback - Positif", "52 - API QRIS Callback - Negatif"
-        ];
+import db from "../../database.js";
+
+const result = await db.query("SELECT document_names FROM document_name WHERE name = 'QRIS MPM SNAP'");
+export const QRIS_DOCUMENT = result.rows[0]?.document_names || [];
 
 export default QRIS_DOCUMENT;

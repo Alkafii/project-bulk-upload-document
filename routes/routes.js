@@ -11,12 +11,6 @@ import {
     DOCUMENT_FORM
 } from "../config/documentFields.js";
 
-import {
-  VIRTUAL_ACCOUNT_OFF_US_DOCUMENT,
-  VIRTUAL_ACCOUNT_ON_US_DOCUMENT
-} from "../config/document/API/Virtual Account SNAP.js";
-
-import QRIS from "../config/document/API/QRIS SNAP.js";
 
 import { 
   upload, 
