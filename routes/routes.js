@@ -239,7 +239,8 @@ router.get("/read_data", checkAuth, async (req, res) => {
       errorMessage: req.flash("error")[0] || "",
       fields: fields,
       maxMB: MAX_MB,
-      maxFileSize: MAX_FILE_SIZE
+      maxFileSize: MAX_FILE_SIZE,
+      documentForm: DOCUMENT_FORM
     };
 
     res.render("read_data.ejs", data);
