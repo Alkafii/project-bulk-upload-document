@@ -75,60 +75,11 @@
 
                             <h6 class="text-uppercase font-weight-bold text-primary mb-1">📋 Dokumen Integrasi</h6>
                             <hr class="mb-3">
-                            <div class="form-row mb-3">
-                                <div class="form-group col-md-6 mb-0 pr-3">
-                                    <label>Form Pendaftaran API</label>
-                                    <div class="custom-file">
-                                        <input type="file" class="custom-file-input" name="Form_Pendaftaran_API" id="Form_Pendaftaran_API">
-                                        <label class="custom-file-label text-truncate" for="Form_Pendaftaran_API" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                    </div>
-                                    <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                </div>
-                                <div class="form-group col-md-6 mb-0 pl-3">
-                                    <label>Memo Bisnis</label>
-                                    <div class="custom-file">
-                                        <input type="file" class="custom-file-input" name="Memo_Bisnis" id="Memo_Bisnis">
-                                        <label class="custom-file-label text-truncate" for="Memo_Bisnis" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                    </div>
-                                    <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                </div>
-                            </div>
-                            <div class="form-row mb-3">
-                                <div class="form-group col-md-6 mb-0 pr-3">
-                                    <label>BRD</label>
-                                    <div class="custom-file">
-                                        <input type="file" class="custom-file-input" name="BRD" id="BRD">
-                                        <label class="custom-file-label text-truncate" for="BRD" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                    </div>
-                                    <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                </div>
-                                <div class="form-group col-md-6 mb-0 pl-3">
-                                    <label>Form Register Deployment</label>
-                                    <div class="custom-file">
-                                        <input type="file" class="custom-file-input" name="Form_Deployment" id="Form_Deployment">
-                                        <label class="custom-file-label text-truncate" for="Form_Deployment" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                    </div>
-                                    <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                </div>
-                            </div>
-                            <div class="form-row mb-4">
-                                <div class="form-group col-md-6 mb-0 pr-3">
-                                    <label>Outline SIT</label>
-                                    <div class="custom-file">
-                                        <input type="file" class="custom-file-input" name="Outline_SIT" id="Outline_SIT">
-                                        <label class="custom-file-label text-truncate" for="Outline_SIT" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                    </div>
-                                    <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                </div>
-                                <div class="form-group col-md-6 mb-0 pl-3">
-                                    <label>BA UAT</label>
-                                    <div class="custom-file">
-                                        <input type="file" class="custom-file-input" name="BA_UAT" id="BA_UAT">
-                                        <label class="custom-file-label text-truncate" for="BA_UAT" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                    </div>
-                                    <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                </div>
-                            </div>
+                            
+                            <%- include('./partials/documentFields.ejs', {
+                                documents: documentForm.integration
+                            }) %>
+                            
                             <hr>
                             <p class="d-flex justify-content-end mb-0">
                                 <button class="btn btn-primary btn-step-nav" type="button" data-next="2" style="width: 100px;">Next</button>
@@ -138,60 +89,11 @@
                         <div id="sectionStep2" class="form-step-section">
                             <h6 class="text-uppercase font-weight-bold text-primary mb-1">📁 Dokumen Verifikasi ASPI</h6>
                             <hr class="mb-3">
-                            <div class="form-row mb-3">
-                                <div class="form-group col-md-6 mb-0 pr-3">
-                                    <label>Memo Divisi TI</label>
-                                    <div class="custom-file">
-                                        <input type="file" class="custom-file-input" name="Memo_IT" id="Memo_IT">
-                                        <label class="custom-file-label text-truncate" for="Memo_IT" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                    </div>
-                                    <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                </div>
-                                <div class="form-group col-md-6 mb-0 pl-3">
-                                    <label>Surat Permohonan Verifikasi</label>
-                                    <div class="custom-file">
-                                        <input type="file" class="custom-file-input" name="Surat_Permohonan_Verifikasi" id="Surat_Permohonan_Verifikasi">
-                                        <label class="custom-file-label text-truncate" for="Surat_Permohonan_Verifikasi" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                    </div>
-                                    <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                </div>
-                            </div>
-                            <div class="form-row mb-3">
-                                <div class="form-group col-md-6 mb-0 pr-3">
-                                    <label>Surat Penyataan Kebenaran dan Kesesuaian</label>
-                                    <div class="custom-file">
-                                        <input type="file" class="custom-file-input" name="Surat_Kebenaran" id="Surat_Kebenaran">
-                                        <label class="custom-file-label text-truncate" for="Surat_Kebenaran" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                    </div>
-                                    <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                </div>
-                                <div class="form-group col-md-6 mb-0 pl-3">
-                                    <label>Surat Pernyataan Kesesuaian SOP Penyedia</label>
-                                    <div class="custom-file">
-                                        <input type="file" class="custom-file-input" name="Surat_Kesesuaian" id="Surat_Kesesuaian">
-                                        <label class="custom-file-label text-truncate" for="Surat_Kesesuaian" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                    </div>
-                                    <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                </div>
-                            </div>
-                            <div class="form-row mb-4">
-                                <div class="form-group col-md-6 mb-0 pr-3">
-                                    <label>Matrix Penjelasan SOP</label>
-                                    <div class="custom-file">
-                                        <input type="file" class="custom-file-input" name="Matriks_Penjelasan_SOP" id="Matriks_Penjelasan_SOP">
-                                        <label class="custom-file-label text-truncate" for="Matriks_Penjelasan_SOP" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                    </div>
-                                    <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                </div>
-                                <div class="form-group col-md-6 mb-0 pl-3">
-                                    <label>SOP Penyedia Layanan</label>
-                                    <div class="custom-file">
-                                        <input type="file" class="custom-file-input" name="SOP_Penyedia" id="SOP_Penyedia">
-                                        <label class="custom-file-label text-truncate" for="SOP_Penyedia" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                    </div>
-                                    <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                </div>
-                            </div>
+                            <%- include('./partials/documentFields.ejs', {
+                                documents: documentForm.aspi
+                            }) %>
+                            
+                            
                             <hr>
                             <p class="d-flex justify-content-between mb-0">
                                 <button class="btn btn-secondary btn-step-nav" type="button" data-prev="1" style="width: 100px;">Previous</button>
@@ -201,198 +103,33 @@
 
                         <div id="sectionStep3" class="form-step-section">
                             <div id="devsiteVAOff" style="display: none;">
-                                <h6 class="text-uppercase font-weight-bold text-primary mb-1">📋 Hasil Uji Developer Site VA SNAP Off Us (Pengguna Layanan)</h6>
+                                <h6 class="text-uppercase font-weight-bold text-primary mb-1">
+                                    📋 Hasil Uji Developer Site VA SNAP Off Us (Pengguna Layanan)
+                                </h6>
                                 <hr class="mb-3">
-                                <div class="form-row mb-3">
-                                    <div class="form-group col-md-6 mb-0 pr-3">
-                                        <label>Inquiry <label class="font-weight-bold text-success">(Positif)</label></label>
-                                        <div class="custom-file">
-                                            <input type="file" class="custom-file-input text-truncate" name="24 - API Virtual Account - Inquiry - Positif" id="24 - API Virtual Account - Inquiry - Positif">
-                                            <label class="custom-file-label text-truncate" for="24 - API Virtual Account - Inquiry - Positif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                        </div>
-                                        <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                    </div>
-                                    <div class="form-group col-md-6 mb-0 pl-3">
-                                        <label>Inquiry <label class="font-weight-bold text-danger">(Negatif)</label></label>
-                                        <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="24 - API Virtual Account - Inquiry - Negatif" id="24 - API Virtual Account - Inquiry - Negatif">
-                                            <label class="custom-file-label text-truncate" for="24 - API Virtual Account - Inquiry - Negatif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                        </div>
-                                        <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                    </div>
-                                </div>
-                                <div class="form-row mb-3">
-                                    <div class="form-group col-md-6 mb-0 pr-3">
-                                        <label>Payment <label class="font-weight-bold text-success">(Positif)</label></label>
-                                        <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="25 - API Virtual Account - Payment - Positif" id="25 - API Virtual Account - Payment - Positif">
-                                            <label class="custom-file-label text-truncate" for="25 - API Virtual Account - Payment - Positif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                        </div>
-                                        <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                    </div>
-                                    <div class="form-group col-md-6 mb-0 pl-3">
-                                        <label>Payment <label class="font-weight-bold text-danger">(Negatif)</label></label>
-                                        <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="25 - API Virtual Account - Payment - Negatif" id="25 - API Virtual Account - Payment - Negatif">
-                                            <label class="custom-file-label text-truncate" for="25 - API Virtual Account - Payment - Negatif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                        </div>
-                                        <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                    </div>
-                                </div>
-                                <div class="form-row mb-4">
-                                    <div class="form-group col-md-6 mb-0 pr-3">
-                                        <label>Inquiry Status <label class="font-weight-bold text-success">(Positif)</label></label>
-                                        <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="26 - API Virtual Account - Inquiry Status - Positif" id="26 - API Virtual Account - Inquiry Status - Positif">
-                                            <label class="custom-file-label text-truncate" for="26 - API Virtual Account - Inquiry Status - Positif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                        </div>
-                                        <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                    </div>
-                                    <div class="form-group col-md-6 mb-0 pl-3">
-                                        <label>Inquiry Status <label class="font-weight-bold text-danger">(Negatif)</label></label>
-                                        <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="26 - API Virtual Account - Inquiry Status - Negatif" id="26 - API Virtual Account - Inquiry Status - Negatif">
-                                            <label class="custom-file-label text-truncate" for="26 - API Virtual Account - Inquiry Status - Negatif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                        </div>
-                                        <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                    </div>
-                                </div>
+                                <%- include('./partials/documentFields.ejs', {
+                                    documents: documentForm.devsite.vaOff
+                                }) %>
                             </div>
 
                             <div id="devsiteVAOn" style="display: none;">
-                                <h6 class="text-uppercase font-weight-bold text-primary mb-1">📋 Hasil Uji Developer Site VA SNAP On Us (Penyedia Layanan)</h6>
+                                <h6 class="text-uppercase font-weight-bold text-primary mb-1">
+                                    📋 Hasil Uji Developer Site VA SNAP On Us
+                                </h6>
                                 <hr class="mb-3">
-                                <div class="form-row mb-3">
-                                    <div class="form-group col-md-6 mb-0 pr-3">
-                                        <label>Create VA <label class="font-weight-bold text-success">(Positif)</label></label>
-                                        <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="27 - API Virtual Account - Create VA - Positif" id="27 - API Virtual Account - Create VA - Positif">
-                                            <label class="custom-file-label text-truncate" for="27 - API Virtual Account - Create VA - Positif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                        </div>
-                                        <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                    </div>
-                                    <div class="form-group col-md-6 mb-0 pl-3">
-                                        <label>Create VA <label class="font-weight-bold text-danger">(Negatif)</label></label>
-                                        <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="27 - API Virtual Account - Create VA - Negatif" id="27 - API Virtual Account - Create VA - Negatif">
-                                            <label class="custom-file-label text-truncate" for="27 - API Virtual Account - Create VA - Negatif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                        </div>
-                                        <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                    </div>
-                                </div>
-                                <div class="form-row mb-3">
-                                    <div class="form-group col-md-6 mb-0 pr-3">
-                                        <label>Inquiry VA <label class="font-weight-bold text-success">(Positif)</label></label>
-                                        <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="30 - API Virtual Account - Inquiry VA - Positif" id="30 - API Virtual Account - Inquiry VA - Positif">
-                                            <label class="custom-file-label text-truncate" for="30 - API Virtual Account - Inquiry VA - Positif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                        </div>
-                                        <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                    </div>
-                                    <div class="form-group col-md-6 mb-0 pl-3">
-                                        <label>Inquiry VA <label class="font-weight-bold text-danger">(Negatif)</label></label>
-                                        <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="30 - API Virtual Account - Inquiry VA - Negatif" id="30 - API Virtual Account - Inquiry VA - Negatif">
-                                            <label class="custom-file-label text-truncate" for="30 - API Virtual Account - Inquiry VA - Negatif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                        </div>
-                                        <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                    </div>
-                                </div>
-                                <div class="form-row mb-4">
-                                    <div class="form-group col-md-6 mb-0 pr-3">
-                                        <label>Update VA <label class="font-weight-bold text-success">(Positif)</label></label>
-                                        <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="28 - API Virtual Account - Update VA - Positif" id="28 - API Virtual Account - Update VA - Positif">
-                                            <label class="custom-file-label text-truncate" for="28 - API Virtual Account - Update VA - Positif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                        </div>
-                                        <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                    </div>
-                                    <div class="form-group col-md-6 mb-0 pl-3">
-                                        <label>Update VA <label class="font-weight-bold text-danger">(Negatif)</label></label>
-                                        <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="28 - API Virtual Account - Update VA - Negatif" id="28 - API Virtual Account - Update VA - Negatif">
-                                            <label class="custom-file-label text-truncate" for="28 - API Virtual Account - Update VA - Negatif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                        </div>
-                                        <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                    </div>
-                                </div>
-                                <div class="form-row mb-4">
-                                    <div class="form-group col-md-6 mb-0 pr-3">
-                                        <label>Payment VA <label class="font-weight-bold text-success">(Positif)</label></label>
-                                        <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="25 - API Virtual Account - Payment - Positif" id="25 - API Virtual Account - Payment - Positif">
-                                            <label class="custom-file-label text-truncate" for="25 - API Virtual Account - Payment - Positif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                        </div>
-                                        <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                    </div>
-                                    <div class="form-group col-md-6 mb-0 pl-3">
-                                        <label>Payment VA <label class="font-weight-bold text-danger">(Negatif)</label></label>
-                                        <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="25 - API Virtual Account - Payment - Negatif" id="25 - API Virtual Account - Payment - Negatif">
-                                            <label class="custom-file-label text-truncate" for="25 - API Virtual Account - Payment - Negatif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                        </div>
-                                        <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                    </div>
-                                </div>
+                                <%- include('./partials/documentFields.ejs', {
+                                    documents: documentForm.devsite.vaOn
+                                }) %>
                             </div>
 
                             <div id="devsiteQRIS" style="display: none;">
-                                <h6 class="text-uppercase font-weight-bold text-primary mb-1">📋 Hasil Uji Developer Site QRIS MPM SNAP (Penyedia Layanan)</h6>
+                                <h6 class="text-uppercase font-weight-bold text-primary mb-1">
+                                    📋 Hasil Uji Developer Site QRIS MPM SNAP
+                                </h6>
                                 <hr class="mb-3">
-                                <div class="form-row mb-3">
-                                    <div class="form-group col-md-6 mb-0 pr-3">
-                                        <label>Generate QRIS MPM <label class="font-weight-bold text-success">(Positif)</label></label>
-                                        <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="47 - API Generate QR MPM - Positif" id="47 - API Generate QR MPM - Positif">
-                                            <label class="custom-file-label text-truncate" for="47 - API Generate QR MPM - Positif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                        </div>
-                                        <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                    </div>
-                                    <div class="form-group col-md-6 mb-0 pl-3">
-                                        <label>Generate QRIS MPM <label class="font-weight-bold text-danger">(Negatif)</label></label>
-                                        <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="47 - API Generate QR MPM - Negatif" id="47 - API Generate QR MPM - Negatif">
-                                            <label class="custom-file-label text-truncate" for="47 - API Generate QR MPM - Negatif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                        </div>
-                                        <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                    </div>
-                                </div>
-                                <div class="form-row mb-3">
-                                    <div class="form-group col-md-6 mb-0 pr-3">
-                                        <label>QRIS Check Status <label class="font-weight-bold text-success">(Positif)</label></label>
-                                        <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="51 - API Query Payment - Positif" id="51 - API Query Payment - Positif">
-                                            <label class="custom-file-label text-truncate" for="51 - API Query Payment - Positif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                        </div>
-                                        <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                    </div>
-                                    <div class="form-group col-md-6 mb-0 pl-3">
-                                        <label>QRIS Check Status <label class="font-weight-bold text-danger">(Negatif)</label></label>
-                                        <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="51 - API Query Payment - Negatif" id="51 - API Query Payment - Negatif">
-                                            <label class="custom-file-label text-truncate" for="51 - API Query Payment - Negatif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                        </div>
-                                        <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                    </div>
-                                </div>
-                                <div class="form-row mb-3">
-                                    <div class="form-group col-md-6 mb-0 pr-3">
-                                        <label>QRIS Callback <label class="font-weight-bold text-success">(Positif)</label></label>
-                                        <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="52 - API Payment Notification - Positif" id="52 - API Payment Notification - Positif">
-                                            <label class="custom-file-label text-truncate" for="52 - API Payment Notification - Positif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                        </div>
-                                        <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                    </div>
-                                    <div class="form-group col-md-6 mb-0 pl-3">
-                                        <label>QRIS Callback <label class="font-weight-bold text-danger">(Negatif)</label></label>
-                                        <div class="custom-file">
-                                            <input type="file" class="custom-file-input" name="52 - API Payment Notification - Negatif" id="52 - API Payment Notification - Negatif">
-                                            <label class="custom-file-label text-truncate" for="52 - API Payment Notification - Negatif" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                        </div>
-                                        <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                    </div>
-                                </div>
+                                <%- include('./partials/documentFields.ejs', {
+                                    documents: documentForm.devsite.qris
+                                }) %>
                             </div>
 
                             <div id="noApiSelectedMessage" class="alert alert-warning text-center py-4">
@@ -410,24 +147,9 @@
                         <div id="sectionStep4" class="form-step-section">
                             <h6 class="text-uppercase font-weight-bold text-primary mb-1">🗃️ Hasil Uji Fungsionalitas</h6>
                             <hr class="mb-3">
-                            <div class="form-row mb-3">
-                                <div class="form-group col-md-6 mb-0 pr-3">
-                                    <label>BA Uji Fungsionalitas</label>
-                                    <div class="custom-file">
-                                        <input type="file" class="custom-file-input" name="BA_Uji_Fungsi" id="BA_Uji_Fungsi">
-                                        <label class="custom-file-label text-truncate" for="BA_Uji_Fungsi" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                    </div>
-                                    <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                </div>
-                                <div class="form-group col-md-6 mb-0 pl-3">
-                                    <label>Hasil Uji Fungsionalitas</label>
-                                    <div class="custom-file">
-                                        <input type="file" class="custom-file-input" name="Hasil_Uji_Fungsi" id="Hasil_Uji_Fungsi">
-                                        <label class="custom-file-label text-truncate" for="Hasil_Uji_Fungsi" data-browse="🗀" style="padding-right: 50px;">Choose file</label>
-                                    </div>
-                                    <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>
-                                </div>
-                            </div>
+                            <%- include('./partials/documentFields.ejs', {
+                                documents: documentForm.functionality
+                            }) %>
                             <hr>
                             <div class="row no-gutters mb-3">
                                 <div class="col-12 d-flex justify-content-between">

@@ -6,8 +6,9 @@ import bcrypt from "bcrypt";
 import { randomUUID } from "node:crypto";
 
 import {
-  REQUIRED_DOCUMENTS,
-  UPLOAD_FIELDS
+    REQUIRED_DOCUMENTS,
+    UPLOAD_FIELDS,
+    DOCUMENT_FORM
 } from "../config/documentFields.js";
 
 import {
@@ -120,13 +121,15 @@ router.get("/", checkAuth, async (req, res) => {
 
 router.get("/upload", checkAuth, (req, res) => {
   try {
-      res.render("upload.ejs", { 
-        message: req.flash("success")[0] || "", 
-        errorMessage: req.flash("error")[0] || "", 
+    res.render("upload.ejs", {
+        message: req.flash("success")[0] || "",
+        errorMessage: req.flash("error")[0] || "",
 
         maxMB: MAX_MB,
-        maxFileSize: MAX_FILE_SIZE
-      });
+        maxFileSize: MAX_FILE_SIZE,
+
+        documentForm: DOCUMENT_FORM
+    });
   } catch(err) {
       console.log(err);
       res.status(500).send("Terjadi kesalahan pada server. Silakan coba beberapa saat lagi.");
