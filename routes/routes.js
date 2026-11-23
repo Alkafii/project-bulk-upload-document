@@ -558,16 +558,19 @@ router.get("/update_data", checkAuth, async (req, res) => {
     }
 
     res.render("update_data.ejs", {
-      id: id,
-      institution: targetData.name, 
-      integration: targetData.api_name,
-      vaType: targetData.va_type,
-      create_date: targetData.created_at ? targetData.created_at.toString().slice(0, 33) : "-",
-      message: req.flash("success")[0] || "",
-      errorMessage: req.flash("error")[0] || "",
-      fields: fields,
-      maxMB: MAX_MB,
-      maxFileSize: MAX_FILE_SIZE
+        id: id,
+        institution: targetData.name,
+        integration: targetData.api_name,
+        vaType: targetData.va_type,
+        create_date: targetData.created_at
+            ? targetData.created_at.toString().slice(0, 33)
+            : "-",
+        message: req.flash("success")[0] || "",
+        errorMessage: req.flash("error")[0] || "",
+        fields: fields,
+        documentForm: DOCUMENT_FORM,
+        maxMB: MAX_MB,
+        maxFileSize: MAX_FILE_SIZE
     });
 
   } catch (err) {

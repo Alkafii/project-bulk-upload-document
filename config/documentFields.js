@@ -1,5 +1,5 @@
-import INTEGRATION_DOCUMENT from "./document/documentIntegration.js";
-import ASPI_DOCUMENT from "./document/documentASPI.js";
+import INTEGRATION_DOCUMENT from "./document/integrationDocument.js";
+import ASPI_DOCUMENT from "./document/aspiDocument.js";
 
 import {
     VIRTUAL_ACCOUNT_OFF_US_DOCUMENT,
@@ -7,7 +7,7 @@ import {
 } from "./document/API/Virtual Account SNAP.js";
 
 import QRIS_DOCUMENT from "./document/API/QRIS SNAP.js";
-import UJI_FUNGSI_DOCUMENT from "./document/documentUjiFungsi.js";
+import UJI_FUNGSI_DOCUMENT from "./document/ujiFungsiDocument.js";
 
 const createDocumentFields = (documents, prefix, isApi = false) => {
     return documents.map((name, index) => ({
