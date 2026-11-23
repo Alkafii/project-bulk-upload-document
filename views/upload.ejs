@@ -102,46 +102,27 @@
                             </p>
                         </div>
 
-                        <div id="sectionStep3" class="form-step-section">
-                            <div id="devsiteVAOff" style="display: none;">
-                                <h6 class="text-uppercase font-weight-bold text-primary mb-1">
-                                    📋 Hasil Uji Developer Site VA SNAP Off Us (Pengguna Layanan)
-                                </h6>
-                                <hr class="mb-3">
-                                <%- include('./partials/documentFields.ejs', {
-                                    documents: documentForm.devsite.vaOff
-                                }) %>
-                            </div>
+                        <div id="apiDocumentGroups">
+                            <% documentForm.apiDocuments.forEach(api => { %>
+                                <div class="api-document-group" data-api-name="<%= api.name %>" style="display: none;">
+                                    <h6 class="text-uppercase font-weight-bold text-primary mb-1">
+                                        📋 Dokumen API - <%= api.name %>
+                                    </h6>
+                                    <hr class="mb-3">
 
-                            <div id="devsiteVAOn" style="display: none;">
-                                <h6 class="text-uppercase font-weight-bold text-primary mb-1">
-                                    📋 Hasil Uji Developer Site VA SNAP On Us
-                                </h6>
-                                <hr class="mb-3">
-                                <%- include('./partials/documentFields.ejs', {
-                                    documents: documentForm.devsite.vaOn
-                                }) %>
-                            </div>
+                                    <%- include('./partials/documentFields.ejs', {
+                                        documents: api.fields
+                                    }) %>
 
-                            <div id="devsiteQRIS" style="display: none;">
-                                <h6 class="text-uppercase font-weight-bold text-primary mb-1">
-                                    📋 Hasil Uji Developer Site QRIS MPM SNAP
-                                </h6>
-                                <hr class="mb-3">
-                                <%- include('./partials/documentFields.ejs', {
-                                    documents: documentForm.devsite.qris
-                                }) %>
-                            </div>
+                                </div>
+                            <% }) %>
+                        </div>
 
-                            <div id="noApiSelectedMessage" class="alert alert-warning text-center py-4">
-                                <h5>API belum dipilih atau dikonfigurasi.</h5>
-                                <p class="mb-0">Silakan kembali ke <strong>Step 1</strong> untuk menentukan API Name dan tipenya.</p>
-                            </div>
-
-                            <hr>
-                            <p class="d-flex justify-content-between mb-0">
-                                <button class="btn btn-secondary btn-step-nav" type="button" data-prev="2" style="width: 100px;">Previous</button>
-                                <button class="btn btn-primary btn-step-nav" type="button" data-next="4" id="btnNextToStep4" style="width: 100px;">Next</button>
+                        <div id="noApiSelectedMessage" class="alert alert-warning text-center py-4" style="display: none;">
+                            <h5>API belum dipilih atau dikonfigurasi.</h5>
+                            <p class="mb-0">
+                                Silakan kembali ke <strong>Step 1</strong>
+                                untuk menentukan API Name dan dokumennya.
                             </p>
                         </div>
 
@@ -274,41 +255,35 @@
 
             window.toggleApiFields = function (selectedValue) {
                 const isVA = selectedValue === 'Virtual Account SNAP';
-                
+
                 $('#VA').toggle(isVA);
                 $('#vaType').prop('required', isVA);
+
+                if (!isVA) {
+                    $('#vaType').val('');
+                }
 
                 adjustStep3Fields();
             };
 
-            $('#vaType').on('change', function() {
-                adjustStep3Fields();
-            });
-
             function adjustStep3Fields() {
-                const apiType = $('#integrationType').val();
-                const vaType = $('#vaType').val();
+                const selectedApi = $('#integrationType').val();
 
-                $('#devsiteVAOff, #devsiteVAOn, #devsiteQRIS, #noApiSelectedMessage').hide();
-                $('#btnNextToStep4').prop('disabled', false);
+                $('.api-document-group').hide();
 
-                if (apiType === 'Virtual Account SNAP') {
-                    if (vaType === 'Off Us') {
-                        $('#devsiteVAOff').show();
-                    } else if (vaType === 'On Us') {
-                        $('#devsiteVAOn').show();
-                    } else {
-                        $('#noApiSelectedMessage').show();
-                        $('#btnNextToStep4').prop('disabled', true);
-                    }
-                } else if (apiType === 'QRIS MPM SNAP') {
-                    $('#devsiteQRIS').show();
+                const selectedGroup = $('.api-document-group').filter(function () {
+                    return $(this).attr('data-api-name') === selectedApi;
+                });
+
+                if (selectedGroup.length > 0) {
+                    selectedGroup.show();
+                    $('#noApiSelectedMessage').hide();
+                    $('#btnNextToStep4').prop('disabled', false);
                 } else {
                     $('#noApiSelectedMessage').show();
                     $('#btnNextToStep4').prop('disabled', true);
                 }
             }
-
             $('form').on('submit', function (e) {
                 const files = $('.custom-file-input')
                     .toArray()
