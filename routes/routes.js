@@ -21,7 +21,6 @@ async function dynamicUploadFields(req, res, next) {
     try {
         const { uploadFields } = await getDocumentConfig();
 
-        // Membuat konfigurasi Multer terbaru untuk request ini.
         upload.fields(uploadFields)(req, res, next);
 
     } catch (err) {
@@ -139,6 +138,13 @@ router.get("/", checkAuth, async (req, res) => {
 router.get("/upload", checkAuth, async (req, res) => {
     try {
         const { documentForm } = await getDocumentConfig();
+        const result = (await db.query(`SELECT name, document_names FROM document_name ORDER BY name ASC`)).rows;
+
+        if (!result) {
+          return res.status(404).send("Data tidak ditemukan.");
+        }
+
+        const documentCategory = result.map(row => `<option value="${row.name}">${row.name}</option>`).join("");     
 
         res.render("upload.ejs", {
             message: req.flash("success")[0] || "",
@@ -147,14 +153,14 @@ router.get("/upload", checkAuth, async (req, res) => {
             maxMB: MAX_MB,
             maxFileSize: MAX_FILE_SIZE,
 
+            documentCategory: documentCategory,
             documentForm
         });
 
     } catch (err) {
         console.error("Error GET /upload:", err);
-        res.status(500).send(
-            "Terjadi kesalahan saat mengambil konfigurasi dokumen."
-        );
+        req.flash("error", "Terjadi kesalahan server saat mengunggah dokumen. Silakan coba lagi.");
+        return res.redirect("/upload");
     }
 });
 
@@ -820,6 +826,103 @@ router.get("/delete", checkAuth, async (req, res) => {
 });
 
 
+router.get("/api_names", checkAuth, async (req, res) => {
+  try {
+    const dataDb = (await db.query("SELECT * FROM document_name")).rows;
+    
+    let rowData = "";
+    for(let i = 0; i < dataDb.length; i++) {
+      const row = dataDb[i];
+      const totalDocs = row.document_names ? (Array.isArray(row.document_names) ? row.document_names.length : 1) : 0;
+      rowData += `<tr>
+                      <td class="text-center align-middle">${i + 1}</td>
+                      <td class="align-middle">${row.name}</td>
+                      <td class="align-middle">${totalDocs} Documents</td>
+                      <td class="text-center align-middle">
+                          <button type="button" class="btn btn-sm btn-outline-secondary" 
+                              data-toggle="modal" 
+                              data-target="#modalEditDocument" 
+                              data-id="${row.id || ''}"
+                              data-name="${row.name}">
+                              Edit
+                          </button>
+
+                          <form action="/document_names/delete" method="POST" class="d-inline">
+                              <input type="hidden" name="id" value="${row.id || ''}">
+                              <input type="hidden" name="documentName" value="${row.name}">
+                              
+                              <button type="button" class="btn btn-sm btn-outline-danger btn-trigger-delete" 
+                                  data-toggle="modal" 
+                                  data-target="#modalDeleteConfirmation" 
+                                  data-id="${row.id || ''}" 
+                                  data-document="${row.name}">
+                                  Delete
+                              </button>
+                          </form>
+                      </td>
+                  </tr>`;
+    }
+
+    return res.render("add_api_name.ejs", { rowData: rowData });
+  } catch(err) {
+    console.error("Error GET /api_names:", err); //  Disamakan dengan nama rutenya agar log akurat
+    return res.status(500).send(
+      "Terjadi kesalahan saat mengambil data dokumen."
+    );
+  }
+});
+
+
+router.post("/api_names", checkAuth, async (req, res) => {
+  try {
+    let apiName = req.body.apiName;
+
+    if (!apiName || apiName.trim() === "") {
+        req.flash("error", "Nama API tidak boleh kosong!");
+        return res.redirect("/api_names");
+    }
+
+    apiName = apiName.trim();
+
+    if (apiName.length > 150) {
+        req.flash("error", "Nama API terlalu panjang! Maksimal 150 karakter.");
+        return res.redirect("/api_names");
+    }
+
+    apiName = apiName
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#x27;");
+
+    const checkDuplicate = await db.query(
+        "SELECT id FROM document_name WHERE name ILIKE $1", 
+        [apiName]
+    );
+
+    if (checkDuplicate.rows.length > 0) {
+        req.flash("error", `API dengan nama "${apiName}" sudah terdaftar!`);
+        return res.redirect("/api_names");
+    }
+
+    console.log("Menambahkan API Baru yang Aman:", apiName);
+    await db.query(
+        "INSERT INTO document_name (name, document_names) VALUES ($1, $2)", 
+        [apiName, JSON.stringify([])]
+    );
+
+    req.flash("success", "API Baru berhasil ditambahkan!");
+    return res.redirect("/api_names");
+
+  } catch(err) {
+    console.error("Error POST /api_names:", err); 
+    req.flash("error", "Terjadi kesalahan server saat menyimpan data API baru.");
+    return res.redirect("/api_names");
+  }
+});
+
+
 
 router.get("/document_names", checkAuth, async (req, res) => {
     try {
@@ -1002,7 +1105,6 @@ router.post("/document_names/update", checkAuth, async (req, res) => {
             return res.redirect("/document_names");
         }
 
-        // Periksa bentrokan nama dengan seluruh konfigurasi field.
         const { requiredDocuments } = await getDocumentConfig();
 
         const duplicate = requiredDocuments.some(name =>
@@ -1051,7 +1153,6 @@ router.post("/document_names/update", checkAuth, async (req, res) => {
             throw new Error("DOCUMENT_NOT_FOUND");
         }
 
-        // Cegah perubahan nama jika dokumen sudah pernah diupload.
         const uploadedResult = await client.query(
             "SELECT uploaded_files FROM upload_document"
         );
@@ -1088,12 +1189,7 @@ router.post("/document_names/update", checkAuth, async (req, res) => {
             updateValue = documents;
         }
 
-        await client.query(
-            `UPDATE document_name
-             SET document_names = ${castExpression}
-             WHERE name = $2`,
-            [updateValue, cleanCategory]
-        );
+        await client.query(`UPDATE document_name SET document_names = ${castExpression} WHERE name = $2`, [updateValue, cleanCategory]);
 
         await client.query("COMMIT");
 
@@ -1177,7 +1273,6 @@ router.post("/document_names/delete", checkAuth, async (req, res) => {
             throw new Error("DOCUMENT_NOT_FOUND");
         }
 
-        // Periksa apakah field sudah pernah digunakan untuk upload.
         const uploadedResult = await client.query(
             "SELECT uploaded_files FROM upload_document"
         );

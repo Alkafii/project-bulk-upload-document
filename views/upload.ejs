@@ -41,7 +41,7 @@
                 <div class="card border-1 p-4 shadow-sm w-100" style="border-radius: 8px;">
                     <form action="/upload" method="post" enctype="multipart/form-data">
                         <h3 class="text-primary text-uppercase font-weight-bold mt-3 text-left">Upload Dokumen</h3>
-                        <p class="mb-4">Silakan isi kelengkapan dokumen Anda dengan mengikuti panduan langkah demi langkah berikut.</p>
+                        <p class="mb-4">Please complete your document requirements by following the step-by-step guide below.</p>
 
                         <div id="clientErrorBox" class="alert alert-danger alert-dismissible fade show w-100 text-center mb-4 shadow-sm <%= errorMessage ? '' : 'd-none' %>" role="alert">
                             <strong id="errorMessageText"><%= errorMessage || "" %></strong>
@@ -60,8 +60,9 @@
                                 <label for="integrationType">API Name <span class="font-weight-bold text-danger">*</span></label>
                                 <select name="integrationType" id="integrationType" class="form-control text-secondary" required onchange="toggleApiFields(this.value)">
                                     <option value="" disabled selected>Select</option>
-                                    <option value="Virtual Account SNAP">Virtual Account SNAP</option>
-                                    <option value="QRIS MPM SNAP">QRIS MPM SNAP</option>
+                                    
+                                    <%- documentCategory %>
+
                                 </select>
                             </div>
                             <div class="mb-4" id="VA" style="display: none;">
@@ -73,7 +74,7 @@
                                 </select>
                             </div>
 
-                            <h6 class="text-uppercase font-weight-bold text-primary mb-1">📋 Dokumen Integrasi</h6>
+                            <h6 class="text-uppercase font-weight-bold text-primary mb-1">
                             <hr class="mb-3">
                             
                             <%- include('./partials/documentFields.ejs', {

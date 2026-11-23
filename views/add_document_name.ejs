@@ -17,7 +17,7 @@
             <div class="container-fluid px-0">
                 <div class="mb-4">
                     <h3 class="page-title text-uppercase mb-2">Add Document Name</h3>
-                    <p class="text-muted mb-0">Kelola daftar nama dokumen yang diperlukan dalam proses integrasi API.</p>
+                    <p class="text-muted mb-0">Manage the list of document names required for the API integration process.</p>
                 </div>
                 <div class="card document-card shadow-sm mb-4">
                     <div class="card-body p-4">
@@ -55,14 +55,14 @@
                                     <%- documentCategory %>
 
                                 </select>
-                                <small class="form-text text-muted">Pilih kategori tempat dokumen akan ditambahkan.</small>
+                                <small class="form-text text-muted">Select the category where the document will be added.</small>
                             </div>
-                            <div class="form-group mb-4">
+                            <div class="form-group mb-1">
                                 <label class="form-label">
                                     Document Name<span class="required">*</span>
                                 </label>
                                 <input type="text" class="form-control" id="documentName" name="documentName" placeholder="Example: Form Pendaftaran API" maxlength="150" required>
-                                <small class="form-text text-muted">Masukkan nama dokumen yang akan digunakan sebagai identitas field upload.</small>
+                                <small class="form-text text-muted">Enter the document name to be used as the upload field identity.</small>
                             </div>
                             <div class="d-flex justify-content-end">
                                 <button type="reset" class="btn btn-light text-secondary mr-2">Reset</button>
@@ -168,13 +168,16 @@
                 <div class="modal-body">
                     <div class="form-group">
                         <label for="editDocumentCategory">Document Category</label>
-                        <input type="text"class="form-control"id="editDocumentCategory"readonly>
-                        <input type="hidden"name="category"id="editCategory">
+                        <input type="text" class="form-control" id="editDocumentCategory" readonly />
+                        <input type="hidden" name="category" id="editCategory" />
                     </div>
                     <div class="form-group mb-2">
-                        <label for="editDocumentName">Document Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="editDocumentName" name="newDocumentName" placeholder="Enter document name" maxlength="150" required><inputtype="hidden"name="oldDocumentName"id="oldDocumentName">
-                        <small class="form-text text-muted">Nama dokumen maksimal 150 karakter.</small>
+                        <label for="editDocumentName"> Document Name <span class="text-danger">*</span> </label>
+                        <input type="text" class="form-control" id="editDocumentName" name="newDocumentName" placeholder="Enter document name" maxlength="150" required />
+                        <input type="hidden" name="oldDocumentName" id="oldDocumentName" />
+                        <small class="form-text text-muted">
+                            Nama dokumen maksimal 150 karakter.
+                        </small>
                     </div>
                 </div>
                 <div class="modal-footer">
