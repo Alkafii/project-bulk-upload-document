@@ -1,197 +1,153 @@
-router.get("/document_names", checkAuth, async (req, res) => {
-    try {
-        const result = await db.query(`
-            SELECT name, document_names
-            FROM document_name
-            ORDER BY name ASC
-        `);
 
-        const documentGroups = result.rows.map(row => {
-            let documents = row.document_names || [];
+import db from "./database.js";
 
-            // Antisipasi jika data dari database berbentuk JSON string.
-            if (typeof documents === "string") {
-                documents = JSON.parse(documents);
-            }
+import INTEGRATION_DOCUMENT from "./document/integrationDocument.js";
+import ASPI_DOCUMENT from "./document/aspiDocument.js";
+import UJI_FUNGSI_DOCUMENT from "./document/ujiFungsiDocument.js";
 
-            return {
-                name: row.name,
-                documents: documents.map(document => ({
-                    name: document
-                }))
-            };
-        });
-
-        return res.render("add_document_name.ejs", {
-            documentGroups,
-            message: req.flash("success")[0] || "",
-            errorMessage: req.flash("error")[0] || ""
-        });
-
-    } catch (err) {
-        console.error("Error GET /document_names:", err);
-
-        return res.status(500).send(
-            "Terjadi kesalahan saat mengambil data dokumen."
-        );
+// Mengubah data dari database menjadi array nama dokumen.
+function normalizeDocuments(value) {
+    if (Array.isArray(value)) {
+        return value.map(item => String(item).trim()).filter(Boolean);
     }
-});
 
+    if (typeof value === "string") {
+        try {
+            const parsed = JSON.parse(value);
 
+            if (Array.isArray(parsed)) {
+                return parsed.map(item => String(item).trim()).filter(Boolean);
+            }
+        } catch {
+            throw new Error("Format document_names pada database tidak valid.");
+        }
+    }
 
+    return [];
+}
 
+function createDocumentFields(documents, prefix, isApi = false) {
+    return documents.map((name, index) => ({
+        name,
+        id: `${prefix}_${index}`,
+        label: isApi
+            ? name.replace(/^\d+ - API /, "").replace(/ - /g, " · ")
+            : name.replace(/_/g, " ")
+    }));
+}
 
-
-
-
-
-router.post("/document_names", checkAuth, async (req, res) => {
-    let client;
-
-    try {
-        const category = req.body.category;
-        const documentName = req.body.documentName;
-
-        const allowedCategories = [
-            "Integration",
-            "ASPI",
+// Dipanggil setiap request yang membutuhkan konfigurasi dokumen.
+export async function getDocumentConfig() {
+    const result = await db.query(
+        `SELECT name, document_names
+         FROM document_name
+         WHERE name = ANY($1::text[])`,
+        [[
             "VA SNAP Off Us",
             "VA SNAP On Us",
-            "QRIS MPM SNAP",
-            "Functionality"
-        ];
+            "QRIS MPM SNAP"
+        ]]
+    );
 
-        // Validasi input
-        if (
-            typeof category !== "string" ||
-            typeof documentName !== "string"
-        ) {
-            req.flash("error", "Data dokumen tidak valid.");
-            return res.redirect("/document_names");
-        }
+    const documentsByCategory = {};
 
-        const cleanCategory = category.trim();
-        const cleanDocumentName = documentName.trim();
+    for (const row of result.rows) {
+        documentsByCategory[row.name] = normalizeDocuments(row.document_names);
+    }
 
-        if (!allowedCategories.includes(cleanCategory)) {
-            req.flash("error", "Kategori dokumen tidak valid.");
-            return res.redirect("/document_names");
-        }
+    const vaOff = documentsByCategory["VA SNAP Off Us"] || [];
+    const vaOn = documentsByCategory["VA SNAP On Us"] || [];
+    const qris = documentsByCategory["QRIS MPM SNAP"] || [];
 
-        if (
-            !cleanDocumentName ||
-            cleanDocumentName.length > 150
-        ) {
-            req.flash(
-                "error",
-                "Nama dokumen wajib diisi dan maksimal 150 karakter."
-            );
+    const documentForm = {
+        integration: createDocumentFields(INTEGRATION_DOCUMENT, "integration"),
+        aspi: createDocumentFields(ASPI_DOCUMENT, "aspi"),
 
-            return res.redirect("/document_names");
-        }
+        devsite: {
+            vaOff: createDocumentFields(vaOff, "va_off", true),
+            vaOn: createDocumentFields(vaOn, "va_on", true),
+            qris: createDocumentFields(qris, "qris", true)
+        },
 
-        client = await db.connect();
+        functionality: createDocumentFields(
+            UJI_FUNGSI_DOCUMENT,
+            "functionality"
+        )
+    };
 
-        await client.query("BEGIN");
+    const requiredDocuments = [
+        ...INTEGRATION_DOCUMENT,
+        ...ASPI_DOCUMENT,
+        ...vaOff,
+        ...vaOn,
+        ...qris,
+        ...UJI_FUNGSI_DOCUMENT
+    ];
 
-        // Ambil kategori dan kunci record selama transaksi.
-        const result = await client.query(
-            `SELECT
-                document_names,
-                pg_typeof(document_names)::text AS data_type
-             FROM document_name
-             WHERE name = $1
-             FOR UPDATE`,
-            [cleanCategory]
-        );
+    // Multer membutuhkan nama field yang unik.
+    const uniqueDocuments = [...new Set(requiredDocuments)];
 
-        if (result.rows.length === 0) {
-            await client.query("ROLLBACK");
+    if (uniqueDocuments.length !== requiredDocuments.length) {
+        throw new Error("Ditemukan nama field dokumen yang duplikat.");
+    }
 
-            req.flash("error", "Kategori dokumen tidak ditemukan.");
-            return res.redirect("/document_names");
-        }
+    const uploadFields = uniqueDocuments.map(name => ({
+        name,
+        maxCount: 1
+    }));
 
-        const targetData = result.rows[0];
+    return {
+        documentForm,
+        requiredDocuments: uniqueDocuments,
+        uploadFields
+    };
+}
 
-        let documents = targetData.document_names || [];
 
-        if (typeof documents === "string") {
-            documents = JSON.parse(documents);
-        }
 
-        if (!Array.isArray(documents)) {
-            throw new Error("INVALID_DOCUMENT_FORMAT");
-        }
 
-        // Validasi duplikasi tanpa membedakan huruf besar/kecil.
-        const isDuplicate = documents.some(document =>
-            String(document).trim().toLowerCase() ===
-            cleanDocumentName.toLowerCase()
-        );
 
-        if (isDuplicate) {
-            await client.query("ROLLBACK");
 
-            req.flash("error", "Nama dokumen sudah terdaftar pada kategori ini.");
-            return res.redirect("/document_names");
-        }
 
-        const updatedDocuments = [
-            ...documents,
-            cleanDocumentName
-        ];
 
-        // Mendukung kolom PostgreSQL JSON, JSONB, maupun array.
-        let updateValue;
-        let castExpression = "$1";
+async function dynamicUploadFields(req, res, next) {
+    try {
+        const { uploadFields } = await getDocumentConfig();
 
-        if (targetData.data_type === "jsonb") {
-            updateValue = JSON.stringify(updatedDocuments);
-            castExpression = "$1::jsonb";
-        } else if (targetData.data_type === "json") {
-            updateValue = JSON.stringify(updatedDocuments);
-            castExpression = "$1::json";
-        } else if (targetData.data_type === "text") {
-            updateValue = JSON.stringify(updatedDocuments);
-        } else {
-            updateValue = updatedDocuments;
-        }
-
-        await client.query(
-            `UPDATE document_name
-             SET document_names = ${castExpression}
-             WHERE name = $2`,
-            [updateValue, cleanCategory]
-        );
-
-        await client.query("COMMIT");
-
-        req.flash("success", "Nama dokumen berhasil ditambahkan!");
-
-        return res.redirect("/document_names");
+        // Membuat konfigurasi Multer terbaru untuk request ini.
+        upload.fields(uploadFields)(req, res, next);
 
     } catch (err) {
-        if (client) {
-            try {
-                await client.query("ROLLBACK");
-            } catch (rollbackError) {
-                console.error("Rollback gagal:", rollbackError);
-            }
-        }
+        next(err);
+    }
+}
 
-        console.error("Error POST /document_names:", err);
 
-        if (err.message === "INVALID_DOCUMENT_FORMAT") {
-            req.flash("error", "Format daftar dokumen pada database tidak valid.");
-            return res.redirect("/document_names");
-        }
 
-        req.flash("error", "Gagal menambahkan nama dokumen.");
-        return res.redirect("/document_names");
 
-    } finally {
-        if (client) client.release();
+
+
+
+
+router.get("/upload", checkAuth, async (req, res) => {
+    try {
+        const { documentForm } = await getDocumentConfig();
+
+        res.render("upload.ejs", {
+            message: req.flash("success")[0] || "",
+            errorMessage: req.flash("error")[0] || "",
+
+            maxMB: MAX_MB,
+            maxFileSize: MAX_FILE_SIZE,
+
+            documentForm
+        });
+
+    } catch (err) {
+        console.error("Error GET /upload:", err);
+        res.status(500).send(
+            "Terjadi kesalahan saat mengambil konfigurasi dokumen."
+        );
     }
 });
 
@@ -200,22 +156,70 @@ router.post("/document_names", checkAuth, async (req, res) => {
 
 
 
-<% if (message) { %>
-    <div class="alert alert-success alert-dismissible fade show">
-        <%= message %>
 
-        <button type="button" class="close" data-dismiss="alert">
-            <span>&times;</span>
-        </button>
-    </div>
-<% } %>
+const {
+    documentForm,
+    requiredDocuments
+} = await getDocumentConfig();
 
-<% if (errorMessage) { %>
-    <div class="alert alert-danger alert-dismissible fade show">
-        <%= errorMessage %>
 
-        <button type="button" class="close" data-dismiss="alert">
-            <span>&times;</span>
-        </button>
-    </div>
-<% } %>
+
+
+for (let i = 0; i < requiredDocuments.length; i++) {
+    const docName = requiredDocuments[i];
+    
+    
+    
+    
+    
+    const {
+    documentForm,
+    requiredDocuments
+} = await getDocumentConfig();
+
+
+
+
+
+for (let i = 0; i < requiredDocuments.length; i++) {
+    const docName = requiredDocuments[i];
+    
+    
+    
+    
+    
+const { documentForm } = await getDocumentConfig();
+
+const baseDocumentCount =
+    documentForm.integration.length +
+    documentForm.aspi.length +
+    documentForm.functionality.length;
+    
+    
+    
+    
+    
+    
+    
+    
+let targetDocument;
+
+if (totalDocument.api_name === "QRIS MPM SNAP") {
+    targetDocument = baseDocumentCount + documentForm.devsite.qris.length;
+} else if (totalDocument.va_type === "Off Us") {
+    targetDocument = baseDocumentCount + documentForm.devsite.vaOff.length;
+} else {
+    targetDocument = baseDocumentCount + documentForm.devsite.vaOn.length;
+}
+
+
+
+
+
+
+
+
+
+
+
+
