@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Integration Documents</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"></head>
+<body class="bg-light"><div class="d-flex" style="min-height:100vh"><%- include('./partials/sidebar.ejs') %>
+<main class="flex-fill p-4"><div class="container-fluid">
+<div class="d-flex justify-content-between align-items-center mb-4"><h3 class="text-primary font-weight-bold mb-0">Integration Documents</h3><a href="/upload" class="btn btn-primary">＋ Add Integration</a></div>
+<% if(message){ %><div class="alert alert-success"><%= message %></div><% } %><% if(errorMessage){ %><div class="alert alert-danger"><%= errorMessage %></div><% } %>
+<div class="card border-0 shadow-sm"><div class="table-responsive"><table class="table table-hover mb-0">
+<thead class="thead-light"><tr><th>No</th><th>Partner</th><th>API Name</th><th>VA Type</th><th>Created</th><th>Updated</th><th class="text-center">Uploaded</th><th>Action</th></tr></thead><tbody>
+<% if(!integrations.length){ %><tr><td colspan="8" class="text-center text-muted py-5">Belum ada data integrasi.</td></tr><% } %>
+<% integrations.forEach((item,i)=>{ %><tr>
+<td><%= i+1 %></td><td class="font-weight-bold"><%= item.name %></td><td><%= item.api_name %></td><td><%= item.va_type || '-' %></td>
+<td><%= item.created_at ? new Date(item.created_at).toLocaleString('id-ID') : '-' %></td><td><%= item.updated_at ? new Date(item.updated_at).toLocaleString('id-ID') : '-' %></td>
+<td class="text-center"><span class="badge badge-primary"><%= item.uploaded_count %></span></td>
+<td class="text-nowrap"><a href="/read_data?id=<%= item.id %>" class="btn btn-sm btn-outline-primary">View</a> <a href="/delete?id=<%= item.id %>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Hapus integrasi dan seluruh dokumennya?')">Delete</a></td>
+</tr><% }) %></tbody></table></div></div></div></main></div></body></html>

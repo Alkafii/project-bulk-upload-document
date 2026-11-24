@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Upload Dokumen</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/style/style.css">
+  <style>
+    .dropzone{border:2px dashed #9bb8df;border-radius:12px;background:#f7faff;padding:32px;text-align:center;cursor:pointer}
+    .dropzone.drag{background:#eaf2ff;border-color:#2563eb}
+    .file-row{border:1px solid #e2e8f0;border-radius:9px;padding:12px;margin-bottom:10px;background:#fff}
+    .file-name{font-size:13px;color:#64748b;word-break:break-all}
+  </style>
+</head>
+<body class="bg-light">
+<div class="d-flex" style="min-height:100vh">
+  <%- include('./partials/sidebar.ejs') %>
+  <main class="flex-fill p-4">
+    <div class="container-fluid" style="max-width:1050px">
+      <a href="/" class="font-weight-bold">‹ Back</a>
+      <h3 class="text-primary font-weight-bold mt-3 mb-4">Upload Dokumen Integrasi</h3>
+      <% if (message) { %><div class="alert alert-success"><%= message %></div><% } %>
+      <% if (errorMessage) { %><div class="alert alert-danger"><%= errorMessage %></div><% } %>
+      <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data" class="card shadow-sm border-0">
+        <div class="card-body p-4">
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label>Nama Mitra / Institusi <span class="text-danger">*</span></label>
+              <input class="form-control" name="institutionName" maxlength="256" required>
+            </div>
+            <div class="form-group col-md-6">
+              <label>API Name <span class="text-danger">*</span></label>
+              <input class="form-control" name="integrationType" maxlength="128" placeholder="Contoh: VA SNAP On Us" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Virtual Account Type <small class="text-muted">(opsional)</small></label>
+            <input class="form-control" name="vaType" maxlength="64" placeholder="Contoh: On Us / Off Us">
+          </div>
+          <hr>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="font-weight-bold mb-0">Daftar Dokumen</h5>
+            <span class="badge badge-primary" id="fileCount">0 file</span>
+          </div>
+          <p class="text-muted small">Pilih atau tarik beberapa file sekaligus. Nama dokumen otomatis mengikuti nama file dan dapat diedit sebelum disimpan.</p>
+          <div class="dropzone" id="dropzone">
+            <div class="h4 mb-2">☁</div>
+            <strong>Tarik dan lepaskan file di sini</strong>
+            <div class="text-muted small my-2">atau klik untuk memilih beberapa file</div>
+            <span class="btn btn-outline-primary btn-sm">Pilih Dokumen</span>
+            <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.xls,.xlsx" multiple hidden>
+          </div>
+          <div class="small text-muted mt-2">Format: PDF, DOC, DOCX, XLS, XLSX. Maks. <%= maxMB %> MB per file, <%= maxTotalMB %> MB total, <%= maxFiles %> file per proses.</div>
+          <div id="fileList" class="mt-4"></div>
+          <div class="d-flex justify-content-end mt-4">
+            <a href="/" class="btn btn-light mr-2">Batal</a>
+            <button type="submit" class="btn btn-primary" id="submitBtn" disabled>Upload Semua Dokumen</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </main>
+</div>
+<script>
+(() => {
+  const form=document.getElementById('uploadForm'), input=document.getElementById('fileInput');
+  const drop=document.getElementById('dropzone'), list=document.getElementById('fileList');
+  const count=document.getElementById('fileCount'), submit=document.getElementById('submitBtn');
+  const maxFile=<%= maxMB * 1024 * 1024 %>, maxTotal=<%= maxTotalMB * 1024 * 1024 %>, maxFiles=<%= maxFiles %>;
+  const allowed=['pdf','doc','docx','xls','xlsx']; let selected=[];
+  const fmt=n=>n<1024*1024?(n/1024).toFixed(1)+' KB':(n/1024/1024).toFixed(2)+' MB';
+  function defaultName(f){return f.name.replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').trim();}
+  function validate(file){
+    const ext=file.name.includes('.')?file.name.split('.').pop().toLowerCase():'';
+    if(!allowed.includes(ext)) return 'Format tidak didukung: '+file.name;
+    if(file.size>maxFile) return 'File melebihi batas per file: '+file.name;
+    return '';
+  }
+  function render(){
+    list.innerHTML='';
+    selected.forEach((item,i)=>{
+      const row=document.createElement('div'); row.className='file-row';
+      row.innerHTML=`<div class="d-flex align-items-start">
+        <div class="flex-fill pr-3">
+          <label class="font-weight-bold mb-1">Nama dokumen</label>
+          <input class="form-control form-control-sm doc-name" maxlength="255" value="">
+          <div class="file-name mt-2"></div>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-danger remove-file" aria-label="Hapus">Hapus</button>
+      </div>`;
+      row.querySelector('.doc-name').value=item.name;
+      row.querySelector('.file-name').textContent=item.file.name+' · '+fmt(item.file.size);
+      row.querySelector('.doc-name').addEventListener('input',e=>item.name=e.target.value);
+      row.querySelector('.remove-file').addEventListener('click',()=>{selected.splice(i,1);render();});
+      list.appendChild(row);
+    });
+    const total=selected.reduce((s,x)=>s+x.file.size,0);
+    count.textContent=selected.length+' file · '+fmt(total);
+    submit.disabled=selected.length===0;
+  }
+  function addFiles(files){
+    const incoming=Array.from(files||[]);
+    for(const file of incoming){
+      const err=validate(file); if(err){alert(err);continue;}
+      if(selected.length>=maxFiles){alert('Maksimal '+maxFiles+' file.');break;}
+      if(selected.some(x=>x.file.name===file.name&&x.file.size===file.size)){continue;}
+      if(selected.reduce((s,x)=>s+x.file.size,0)+file.size>maxTotal){alert('Total ukuran maksimal '+fmt(maxTotal)+'.');break;}
+      selected.push({file,name:defaultName(file)});
+    }
+    input.value=''; render();
+  }
+  drop.addEventListener('click',()=>input.click());
+  input.addEventListener('change',()=>addFiles(input.files));
+  ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag');}));
+  ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag');}));
+  drop.addEventListener('drop',e=>addFiles(e.dataTransfer.files));
+  form.addEventListener('submit',e=>{
+    if(!selected.length){e.preventDefault();alert('Pilih minimal satu dokumen.');return;}
+    const names=selected.map(x=>x.name.trim());
+    if(names.some(x=>!x)){e.preventDefault();alert('Nama dokumen tidak boleh kosong.');return;}
+    const total=selected.reduce((s,x)=>s+x.file.size,0);
+    if(total>maxTotal){e.preventDefault();alert('Total ukuran file melebihi batas.');return;}
+    const data=new FormData(form);
+    data.delete('documents'); data.delete('documentNames');
+    selected.forEach(x=>{data.append('documents',x.file,x.file.name);data.append('documentNames',x.name);});
+    e.preventDefault();
+    submit.disabled=true; submit.textContent='Mengunggah...';
+    fetch(form.action,{method:'POST',body:data,redirect:'follow'})
+      .then(r=>{if(r.redirected)location.href=r.url;else return r.text().then(t=>{throw new Error(t||'Upload gagal');});})
+      .catch(err=>{alert(err.message||'Upload gagal');submit.disabled=false;submit.textContent='Upload Semua Dokumen';});
+  });
+})();
+</script>
+</body></html>
