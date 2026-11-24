@@ -50,7 +50,6 @@
                                       <th class="pl-4">No</th>
                                       <th>Partner</th>
                                       <th>API Name</th>
-                                      <th>VA Type</th>
                                       <th>Created Data</th>
                                       <th>Last Update</th>
                                       <th class="text-center">Uploaded</th>
@@ -59,18 +58,19 @@
                               </thead>
                               <tbody>
                                   <% if (typeof integrations === 'undefined' || !integrations.length) { %>
-                                      <tr>
-                                          <td colspan="8" class="text-center text-muted py-5">
-                                              Belum ada data integrasi.
-                                          </td>
-                                      </tr>
+                                    <tr>
+                                        <td colspan="8" class="p-0 bg-white">
+                                            <div class="row no-gutters p-4 text-center bg-white text-muted justify-content-center">
+                                                Belum ada data integrasi API.
+                                            </div>
+                                        </td>
+                                    </tr>
                                   <% } else { %>
                                       <% integrations.forEach((item, i) => { %>
                                           <tr class="align-middle">
                                               <td class="pl-4"><%= i + 1 %></td>
                                               <td class="font-weight-bold"><%= item.name %></td>
-                                              <td><%= item.api_name %></td>
-                                              <td><%= item.va_type || '-' %></td>
+                                              <td><%= item.api_name %> <%= item.va_type || '' %></td>
                                               <td>
                                                   <%= item.created_at
                                                       ? new Date(item.created_at).toLocaleString('id-ID')

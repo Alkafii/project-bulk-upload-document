@@ -147,7 +147,6 @@ router.post("/upload", checkAuth, upload.array("documents", MAX_FILES), async (r
 
     const institution = text(req.body.institutionName, 256);
     const apiName = text(req.body.integrationType, 128);
-    const vaType = text(req.body.vaType, 64) || null;
     const documentNames = ensureArray(req.body.documentNames);
 
     if (!institution || !apiName) {
@@ -164,10 +163,10 @@ router.post("/upload", checkAuth, upload.array("documents", MAX_FILES), async (r
 
     const integrationResult = await client.query(
       `INSERT INTO upload_document
-        (name, api_name, va_type, folder_name, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        (name, api_name, folder_name, created_at, updated_at)
+       VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
        RETURNING id`,
-      [institution, apiName, vaType, folderName]
+      [institution, apiName, folderName]
     );
     const integrationId = integrationResult.rows[0].id;
 
@@ -317,7 +316,6 @@ router.post(
 
       const institution = text(req.body.institutionName, 256);
       const apiName = text(req.body.integrationType, 128);
-      const vaType = text(req.body.vaType, 64) || null;
       if (!institution || !apiName) throw new Error("Nama mitra dan API Name wajib diisi.");
 
       const deleteIds = ensureArray(req.body.deleteDocumentIds)
@@ -340,9 +338,9 @@ router.post(
 
       await client.query(
         `UPDATE upload_document
-         SET name = $1, api_name = $2, va_type = $3, updated_at = CURRENT_TIMESTAMP
-         WHERE id = $4`,
-        [institution, apiName, vaType, id]
+         SET name = $1, api_name = $2, updated_at = CURRENT_TIMESTAMP
+         WHERE id = $3`,
+        [institution, apiName, id]
       );
 
       if (deleteIds.length) {

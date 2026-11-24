@@ -1,0 +1,27 @@
+.dropzone {
+  border: 2px dashed #9bb8df;
+  border-radius: 12px;
+  background: #f7faff;
+  padding: 32px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.dropzone.drag {
+  background: #eaf2ff;
+  border-color: #2563eb;
+}
+
+.file-row {
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  padding: 12px;
+  margin-bottom: 10px;
+  background: #fff;
+}
+
+.file-name {
+  font-size: 13px;
+  color: #64748b;
+  word-break: break-all;
+}
