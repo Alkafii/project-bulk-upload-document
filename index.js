@@ -2,7 +2,14 @@ import "dotenv/config";
 import express from "express";
 import bodyParser from "body-parser";
 import multer from "multer";
+<<<<<<< HEAD
 import { sessionMiddleware, flashMiddleware } from "./middleware/session.js";
+=======
+import {
+    sessionMiddleware,
+    flashMiddleware
+} from './middleware/session.js';
+>>>>>>> a173ff136bcb27a53e072e5812b634f8cad284f3
 import documentRoutes from "./routes/routes.js";
 import { MAX_MB, MAX_FILES, MAX_TOTAL_MB } from "./config/uploadConfig.js";
 
