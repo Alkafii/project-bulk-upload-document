@@ -1,328 +1,134 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
-    <link rel="stylesheet" href="/style/style.css">
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Upload Dokumen</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/style/style.css">
+  <style>
+    .dropzone{border:2px dashed #9bb8df;border-radius:12px;background:#f7faff;padding:32px;text-align:center;cursor:pointer}
+    .dropzone.drag{background:#eaf2ff;border-color:#2563eb}
+    .file-row{border:1px solid #e2e8f0;border-radius:9px;padding:12px;margin-bottom:10px;background:#fff}
+    .file-name{font-size:13px;color:#64748b;word-break:break-all}
+  </style>
 </head>
-<body>
-    <div class="app-layout">
-
-        <%- include('./partials/sidebar.ejs') %>
-
-        <main class="app-content">
-
-            <div class="sticky-stepper-wrapper">
-                <div class="stepper-container">
-                    <div class="stepper-item active" id="step1">
-                        <div class="step-counter">1</div>
-                        <div class="step-name">Dokumen Integrasi</div>
-                    </div>
-                    <div class="step-line"></div>
-                    <div class="stepper-item" id="step2">
-                        <div class="step-counter">2</div>
-                        <div class="step-name">Verifikasi ASPI</div>
-                    </div>
-                    <div class="step-line"></div>
-                    <div class="stepper-item" id="step3">
-                        <div class="step-counter">3</div>
-                        <div class="step-name">Hasil Uji Devsite</div>
-                    </div>
-                    <div class="step-line"></div>
-                    <div class="stepper-item" id="step4">
-                        <div class="step-counter">4</div>
-                        <div class="step-name">Hasil Fungsionalitas</div>
-                    </div>
-                </div>
+<body class="bg-light">
+<div class="d-flex" style="min-height:100vh">
+  <%- include('./partials/sidebar.ejs') %>
+  <main class="flex-fill p-4">
+    <div class="container-fluid" style="max-width:1050px">
+      <a href="/" class="font-weight-bold">‹ Back</a>
+      <h3 class="text-primary font-weight-bold mt-3 mb-4">Upload Dokumen Integrasi</h3>
+      <% if (message) { %><div class="alert alert-success"><%= message %></div><% } %>
+      <% if (errorMessage) { %><div class="alert alert-danger"><%= errorMessage %></div><% } %>
+      <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data" class="card shadow-sm border-0">
+        <div class="card-body p-4">
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label>Nama Mitra / Institusi <span class="text-danger">*</span></label>
+              <input class="form-control" name="institutionName" maxlength="256" required>
             </div>
-
-            <div class="container-fluid px-0">
-                <div class="card border-1 p-4 shadow-sm w-100" style="border-radius: 8px;">
-                    <form action="/upload" method="post" enctype="multipart/form-data">
-                        <h3 class="text-primary text-uppercase font-weight-bold mt-3 text-left">Upload Dokumen</h3>
-                        <p class="mb-4">Please complete your document requirements by following the step-by-step guide below.</p>
-
-                        <div id="clientErrorBox" class="alert alert-danger alert-dismissible fade show w-100 text-center mb-4 shadow-sm <%= errorMessage ? '' : 'd-none' %>" role="alert">
-                            <strong id="errorMessageText"><%= errorMessage || "" %></strong>
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Close" style="outline: none; padding-bottom: 5px;">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-
-                        <div id="sectionStep1" class="form-step-section active">
-                            <div class="mb-3">
-                                <label>Name of institution<label class="font-weight-bold text-danger">*</label></label>
-                                <input type="text" class="form-control" id="projectName" name="institutionName" placeholder="Integration with.." value="" required
-                                    oninput="this.value = this.value.replace(/[\/|\\]/g, '')">
-                            </div>
-                            <div class="mb-4">
-                                <label for="integrationType">API Name <span class="font-weight-bold text-danger">*</span></label>
-                                <select name="integrationType" id="integrationType" class="form-control text-secondary" required onchange="toggleApiFields(this.value)">
-                                    <option value="" disabled selected>Select</option>
-                                    
-                                    <%- documentCategory %>
-
-                                </select>
-                            </div>
-                            <div class="mb-4" id="VA" style="display: none;">
-                                <label for="vaType">Virtual Account Type <span class="font-weight-bold text-danger">*</span></label>
-                                <select name="vaType" id="vaType" class="form-control text-secondary">
-                                    <option value="" disabled selected>Select</option>
-                                    <option value="Off Us">Off Us</option>
-                                    <option value="On Us">On Us</option>
-                                </select>
-                            </div>
-
-                            <h6 class="text-uppercase font-weight-bold text-primary mb-1">📁 Dokumen Integrasi</h6>
-                            <hr class="mb-3">
-                            
-                            <%- include('./partials/documentFields.ejs', {
-                                documents: documentForm.integration
-                            }) %>
-                            
-                            <hr>
-                            <p class="d-flex justify-content-end mb-0">
-                                <button class="btn btn-primary btn-step-nav" type="button" data-next="2" style="width: 100px;">Next</button>
-                            </p>
-                        </div>
-
-                        <div id="sectionStep2" class="form-step-section">
-                            <h6 class="text-uppercase font-weight-bold text-primary mb-1">📁 Dokumen Verifikasi ASPI</h6>
-                            <hr class="mb-3">
-                            <%- include('./partials/documentFields.ejs', {
-                                documents: documentForm.aspi
-                            }) %>
-                            
-                            
-                            <hr>
-                            <p class="d-flex justify-content-between mb-0">
-                                <button class="btn btn-secondary btn-step-nav" type="button" data-prev="1" style="width: 100px;">Previous</button>
-                                <button class="btn btn-primary btn-step-nav" type="button" data-next="3" style="width: 100px;">Next</button>
-                            </p>
-                        </div>
-
-                        <div id="sectionStep3" class="form-step-section">
-                            <h6 class="text-uppercase font-weight-bold text-primary mb-1">📋 Hasil Uji Devsite</h6>
-                            <hr class="mb-3">
-                            <div id="apiDocumentGroups">
-                                <% documentForm.apiDocuments.forEach(api => { %>
-                                    <div class="api-document-group" data-api-name="<%= api.name %>" style="display: none;" >
-                                        <%- include('./partials/documentFields.ejs', {
-                                            documents: api.fields
-                                        }) %>
-                                    </div>
-                                <% }) %>
-                            </div>
-
-                            <div id="noApiSelectedMessage" class="alert alert-warning text-center py-4" style="display: none;" >
-                                <h5>API belum dipilih atau dikonfigurasi.</h5>
-                                <p class="mb-0">
-                                    Silakan kembali ke <strong>Step 1</strong>
-                                    untuk menentukan API Name dan dokumennya.
-                                </p>
-                            </div>
-
-                            <hr>
-
-                            <div class="d-flex justify-content-between mb-0">
-                                <button class="btn btn-secondary btn-step-nav" type="button" data-prev="2" style="width: 100px;" >
-                                    Previous
-                                </button>
-
-                                <button class="btn btn-primary btn-step-nav" id="btnNextToStep4" type="button" data-next="4" style="width: 100px;" >
-                                    Next
-                                </button>
-                            </div>
-                        </div>
-
-
-                        <div id="sectionStep4" class="form-step-section">
-                            <h6 class="text-uppercase font-weight-bold text-primary mb-1">🗃️ Hasil Uji Fungsionalitas</h6>
-                            <hr class="mb-3">
-                            <%- include('./partials/documentFields.ejs', {
-                                documents: documentForm.functionality
-                            }) %>
-                            <hr>
-                            <div class="row no-gutters mb-3">
-                                <div class="col-12 d-flex justify-content-between">
-                                    <button class="btn btn-secondary btn-step-nav" type="button" data-prev="3" style="width: 100px;">Previous</button>
-                                    <button type="submit" class="btn btn-success" style="width: 120px;">Upload</button>
-                                </div>
-                            </div>
-                        </div>
-                    </form> 
-                </div>
+            <div class="form-group col-md-6">
+              <label>API Name <span class="text-danger">*</span></label>
+              <input class="form-control" name="integrationType" maxlength="128" placeholder="Contoh: VA SNAP On Us" required>
             </div>
-        </main>
+          </div>
+          <div class="form-group">
+            <label>Virtual Account Type <small class="text-muted">(opsional)</small></label>
+            <input class="form-control" name="vaType" maxlength="64" placeholder="Contoh: On Us / Off Us">
+          </div>
+          <hr>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="font-weight-bold mb-0">Daftar Dokumen</h5>
+            <span class="badge badge-primary" id="fileCount">0 file</span>
+          </div>
+          <p class="text-muted small">Pilih atau tarik beberapa file sekaligus. Nama dokumen otomatis mengikuti nama file dan dapat diedit sebelum disimpan.</p>
+          <div class="dropzone" id="dropzone">
+            <div class="h4 mb-2">☁</div>
+            <strong>Tarik dan lepaskan file di sini</strong>
+            <div class="text-muted small my-2">atau klik untuk memilih beberapa file</div>
+            <span class="btn btn-outline-primary btn-sm">Pilih Dokumen</span>
+            <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.xls,.xlsx" multiple hidden>
+          </div>
+          <div class="small text-muted mt-2">Format: PDF, DOC, DOCX, XLS, XLSX. Maks. <%= maxMB %> MB per file, <%= maxTotalMB %> MB total, <%= maxFiles %> file per proses.</div>
+          <div id="fileList" class="mt-4"></div>
+          <div class="d-flex justify-content-end mt-4">
+            <a href="/" class="btn btn-light mr-2">Batal</a>
+            <button type="submit" class="btn btn-primary" id="submitBtn" disabled>Upload Semua Dokumen</button>
+          </div>
+        </div>
+      </form>
     </div>
-
-    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
-    
-    <script>
-        $(document).ready(function () {
-            const errorBox = $('#clientErrorBox');
-            const errorText = $('#errorMessageText');
-
-            const MAX_MB = Number("<%= typeof maxMB !== 'undefined' ? maxMB : 10 %>") || 10;
-            const MAX_FILE_SIZE = Number("<%= typeof maxFileSize !== 'undefined' ? maxFileSize : 10485760 %>") || 10485760;
-            const allowedExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx'];
-
-            function toggleError(message = '') {
-                errorText.text(message);
-                errorBox.toggleClass('d-none', !message).toggleClass('show', !!message);
-                if (message) window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-
-            function validateFile(file) {
-                const ext = file.name.split('.').pop().toLowerCase();
-                if (!allowedExtensions.includes(ext)) return 'Format file tidak didukung! Gunakan PDF, DOC, DOCX, XLS, atau XLSX.';
-                if (file.size > MAX_FILE_SIZE) return `Ukuran file terlalu besar! Ukuran maksimal adalah ${MAX_MB} MB.`;
-                return null;
-            }
-
-            function processFiles(input) {
-                const files = Array.from(input.files);
-                if (!files.length) return;
-
-                for (const file of files) {
-                    const error = validateFile(file);
-                    if (error) {
-                        input.value = '';
-                        $(input).next('.custom-file-label').removeClass('selected').text('Choose file');
-                        return toggleError(error);
-                    }
-                }
-
-                $(input)
-                    .next('.custom-file-label')
-                    .addClass('selected')
-                    .text(files[0].name);
-
-                toggleError();
-            }
-
-            $(document).on('change', '.custom-file-input', function () {
-                processFiles(this);
-            });
-
-            $('.btn-step-nav').on('click', function () {
-                const nextStep = $(this).data('next');
-                const prevStep = $(this).data('prev');
-                let targetStep = nextStep || prevStep;
-
-                if (nextStep) {
-                    const currentSection = $(this).closest('.form-step-section');
-                    let isValid = true;
-                    
-                    currentSection.find('input[required], select[required]').each(function() {
-                        if (!this.checkValidity()) {
-                            this.reportValidity();
-                            isValid = false;
-                            return false;
-                        }
-                    });
-                    if (!isValid) return; 
-                }
-
-                $('.form-step-section').removeClass('active');
-                $(`#sectionStep${targetStep}`).addClass('active');
-
-                updateStepperUI(targetStep);
-
-                setTimeout(() => {
-                    const stepperWrapper = document.querySelector('.sticky-stepper-wrapper');
-                    if (stepperWrapper) {
-                        stepperWrapper.setAttribute('tabindex', '-1'); 
-                        stepperWrapper.focus({ preventScroll: false }); // Paksa pandangan melompat ke elemen ini
-                        stepperWrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }
-
-                    const scrollableContainers = ['.app-content', '.app-layout', 'main', 'body', 'html'];
-                    scrollableContainers.forEach(selector => {
-                        const el = document.querySelector(selector);
-                        if (el) el.scrollTop = 0;
-                    });
-                }, 50);
-            });
-
-            function updateStepperUI(activeStep) {
-                for (let i = 1; i <= 4; i++) {
-                    const stepItem = $(`#step${i}`);
-                    if (i < activeStep) {
-                        stepItem.removeClass('active').addClass('completed');
-                        stepItem.find('.step-counter').html('✓');
-                    } else if (i === activeStep) {
-                        stepItem.removeClass('completed').addClass('active');
-                        stepItem.find('.step-counter').text(i);
-                    } else {
-                        stepItem.removeClass('completed active');
-                        stepItem.find('.step-counter').text(i);
-                    }
-                }
-            }
-
-            window.toggleApiFields = function (selectedValue) {
-                const isVA = selectedValue === 'Virtual Account SNAP';
-
-                $('#VA').toggle(isVA);
-                $('#vaType').prop('required', isVA);
-
-                if (!isVA) {
-                    $('#vaType').val('');
-                }
-
-                adjustStep3Fields();
-            };
-
-            function adjustStep3Fields() {
-                const selectedApi = $('#integrationType').val();
-
-                $('.api-document-group').hide();
-
-                const selectedGroup = $('.api-document-group').filter(function () {
-                    return $(this).attr('data-api-name') === selectedApi;
-                });
-
-                if (selectedGroup.length > 0) {
-                    selectedGroup.show();
-                    $('#noApiSelectedMessage').hide();
-                    $('#btnNextToStep4').prop('disabled', false);
-                } else {
-                    $('#noApiSelectedMessage').show();
-                    $('#btnNextToStep4').prop('disabled', true);
-                }
-            }
-            $('form').on('submit', function (e) {
-                const files = $('.custom-file-input')
-                    .toArray()
-                    .flatMap((i) => Array.from(i.files));
-
-                for (const file of files) {
-                    const error = validateFile(file);
-                    if (error) {
-                        e.preventDefault();
-                        return toggleError(error);
-                    }
-                }
-            });
-
-            $('.custom-file-input').attr('accept', '.pdf,.doc,.docx,.xls,.xlsx');
-        });
-
-        const wrapper = document.querySelector('.sticky-stepper-wrapper');
-        const container = document.querySelector('.stepper-container');
-        if (wrapper && container) {
-            const observer = new IntersectionObserver(
-                ([entry]) => {
-                    container.classList.toggle('is-sticky', entry.intersectionRatio < 1);
-                },
-                { threshold: 1, rootMargin: '-1px 0px 0px 0px' }
-            );
-            observer.observe(wrapper);
-        }
-    </script>
-</body>
-</html>
+  </main>
+</div>
+<script>
+(() => {
+  const form=document.getElementById('uploadForm'), input=document.getElementById('fileInput');
+  const drop=document.getElementById('dropzone'), list=document.getElementById('fileList');
+  const count=document.getElementById('fileCount'), submit=document.getElementById('submitBtn');
+  const maxFile=<%= maxMB * 1024 * 1024 %>, maxTotal=<%= maxTotalMB * 1024 * 1024 %>, maxFiles=<%= maxFiles %>;
+  const allowed=['pdf','doc','docx','xls','xlsx']; let selected=[];
+  const fmt=n=>n<1024*1024?(n/1024).toFixed(1)+' KB':(n/1024/1024).toFixed(2)+' MB';
+  function defaultName(f){return f.name.replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').trim();}
+  function validate(file){
+    const ext=file.name.includes('.')?file.name.split('.').pop().toLowerCase():'';
+    if(!allowed.includes(ext)) return 'Format tidak didukung: '+file.name;
+    if(file.size>maxFile) return 'File melebihi batas per file: '+file.name;
+    return '';
+  }
+  function render(){
+    list.innerHTML='';
+    selected.forEach((item,i)=>{
+      const row=document.createElement('div'); row.className='file-row';
+      row.innerHTML=`<div class="d-flex align-items-start">
+        <div class="flex-fill pr-3">
+          <label class="font-weight-bold mb-1">Nama dokumen</label>
+          <input class="form-control form-control-sm doc-name" maxlength="255" value="">
+          <div class="file-name mt-2"></div>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-danger remove-file" aria-label="Hapus">Hapus</button>
+      </div>`;
+      row.querySelector('.doc-name').value=item.name;
+      row.querySelector('.file-name').textContent=item.file.name+' · '+fmt(item.file.size);
+      row.querySelector('.doc-name').addEventListener('input',e=>item.name=e.target.value);
+      row.querySelector('.remove-file').addEventListener('click',()=>{selected.splice(i,1);render();});
+      list.appendChild(row);
+    });
+    const total=selected.reduce((s,x)=>s+x.file.size,0);
+    count.textContent=selected.length+' file · '+fmt(total);
+    submit.disabled=selected.length===0;
+  }
+  function addFiles(files){
+    const incoming=Array.from(files||[]);
+    for(const file of incoming){
+      const err=validate(file); if(err){alert(err);continue;}
+      if(selected.length>=maxFiles){alert('Maksimal '+maxFiles+' file.');break;}
+      if(selected.some(x=>x.file.name===file.name&&x.file.size===file.size)){continue;}
+      if(selected.reduce((s,x)=>s+x.file.size,0)+file.size>maxTotal){alert('Total ukuran maksimal '+fmt(maxTotal)+'.');break;}
+      selected.push({file,name:defaultName(file)});
+    }
+    input.value=''; render();
+  }
+  drop.addEventListener('click',()=>input.click());
+  input.addEventListener('change',()=>addFiles(input.files));
+  ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag');}));
+  ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag');}));
+  drop.addEventListener('drop',e=>addFiles(e.dataTransfer.files));
+  form.addEventListener('submit',e=>{
+    if(!selected.length){e.preventDefault();alert('Pilih minimal satu dokumen.');return;}
+    const names=selected.map(x=>x.name.trim());
+    if(names.some(x=>!x)){e.preventDefault();alert('Nama dokumen tidak boleh kosong.');return;}
+    const total=selected.reduce((s,x)=>s+x.file.size,0);
+    if(total>maxTotal){e.preventDefault();alert('Total ukuran file melebihi batas.');return;}
+    const data=new FormData(form);
+    data.delete('documents'); data.delete('documentNames');
+    selected.forEach(x=>{data.append('documents',x.file,x.file.name);data.append('documentNames',x.name);});
+    e.preventDefault();
+    submit.disabled=true; submit.textContent='Mengunggah...';
+    fetch(form.action,{method:'POST',body:data,redirect:'follow'})
+      .then(r=>{if(r.redirected)location.href=r.url;else return r.text().then(t=>{throw new Error(t||'Upload gagal');});})
+      .catch(err=>{alert(err.message||'Upload gagal');submit.disabled=false;submit.textContent='Upload Semua Dokumen';});
+  });
+})();
+</script>
+</body></html>

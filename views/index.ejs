@@ -1,115 +1,96 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
-</head>
-<body class="bg-light">
-     <div class="d-flex w-100" style="min-height: 100vh;">
-        
-        <%- include('./partials/sidebar.ejs') %>
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Integration Documents</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
+    />
+  </head>
+  <body class="bg-light">
+    <div class="d-flex" style="min-height: 100vh">
+      <%- include('./partials/sidebar.ejs') %>
+      <main class="flex-fill p-4">
+        <div class="container-fluid">
+          <div
+            class="d-flex justify-content-between align-items-center mb-4"
+          >
+            <h3 class="text-primary font-weight-bold mb-0">
+              Integration Documents
+            </h3>
+            <a href="/upload" class="btn btn-primary">＋ Add Integration</a>
+          </div>
 
-        <div class="flex-fill p-5 overflow-auto">
-            <div class="container-fluid px-0">
-                <div class="w-100 d-flex justify-content-between align-items-center mb-4">
-                    <h3 class="font-weight-bold text-primary m-0">Integration Documents</h3>
-                    <div>
-                        <button type="button" id="deleteSelectedBtn" class="btn btn-danger mr-2" style="display: none;">Delete</button>
-                        <a href="/upload" class="btn btn-primary">✚ Add</a>
-                    </div>
-                </div>
-                <div class="py-2 px-0 w-100 overflow-visible">
-                    <% if (typeof message !== 'undefined' && message) { %>
-                        <div class="alert alert-success alert-dismissible fade show w-100 text-center mb-4 shadow-sm" role="alert">
-                            <strong><%= message %></strong>
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Close" style="outline: none;">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                    <% } %>
-                    <div class="card border-0 shadow-sm">
-                        <div class="row no-gutters bg-primary text-white font-weight-bold p-3 text-center align-items-center rounded-top">
-                            <div class="col-1 d-flex align-items-left pl-3">
-                                <div style="width: 32px;" class="text-left"></div>
-                                <div class="pl-1">No</div>
-                            </div>
-                            <div class="col-2 text-left" style="padding-left: 15px;">Partner</div>
-                            <div class="col-3 text-left">API Name</div>
-                            <div class="col-2 text-left">Create Data</div>
-                            <div class="col-2 text-left">Last Update</div>
-                            <div class="col-1 text-center">Uploaded</div>
-                            <div class="col-1 text-center">Action</div>
-                        </div>
-                        <div class="card-body p-0 bg-white">
-                            <%- rowData %>
-                        </div>
-                    </div>
-                </div>
+          <% if(message){ %>
+            <div class="alert alert-success"><%= message %></div>
+          <% } %>
+          <% if(errorMessage){ %>
+            <div class="alert alert-danger"><%= errorMessage %></div>
+          <% } %>
+
+          <div class="card border-0 shadow-sm">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead class="thead-light">
+                  <tr>
+                    <th>No</th>
+                    <th>Partner</th>
+                    <th>API Name</th>
+                    <th>VA Type</th>
+                    <th>Created</th>
+                    <th>Updated</th>
+                    <th class="text-center">Uploaded</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% if(!integrations.length){ %>
+                    <tr>
+                      <td colspan="8" class="text-center text-muted py-5">
+                        Belum ada data integrasi.
+                      </td>
+                    </tr>
+                  <% } %>
+                  <% integrations.forEach((item, i) => { %>
+                    <tr>
+                      <td><%= i + 1 %></td>
+                      <td class="font-weight-bold"><%= item.name %></td>
+                      <td><%= item.api_name %></td>
+                      <td><%= item.va_type || '-' %></td>
+                      <td>
+                        <%= item.created_at ? new Date(item.created_at).toLocaleString('id-ID') : '-' %>
+                      </td>
+                      <td>
+                        <%= item.updated_at ? new Date(item.updated_at).toLocaleString('id-ID') : '-' %>
+                      </td>
+                      <td class="text-center">
+                        <span class="badge badge-primary">
+                          <%= item.uploaded_count %>
+                        </span>
+                      </td>
+                      <td class="text-nowrap">
+                        <a
+                          href="/read_data?id=<%= item.id %>"
+                          class="btn btn-sm btn-outline-primary"
+                          >View</a
+                        >
+                        <a
+                          href="/delete?id=<%= item.id %>"
+                          class="btn btn-sm btn-outline-danger"
+                          onclick="return confirm('Hapus integrasi dan seluruh dokumennya?')"
+                          >Delete</a
+                        >
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
             </div>
+          </div>
         </div>
+      </main>
     </div>
-
-    <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content border-0 shadow-lg" style="border-radius: 10px;">
-                <div class="modal-header">
-                    <h5 class="modal-title font-weight-bold text-danger" id="deleteModalLabel">Delete Confirmation</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="outline: none;">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body py-4">
-                    Confirm to delete the integration documents with "<strong id="institutionNameText"></strong>"?
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light font-weight-bold text-secondary" data-dismiss="modal">Cancel</button>
-                    <a href="#" id="confirmDeleteBtn" class="btn btn-danger font-weight-bold">Delete</a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
-    <script>
-        const checkboxes = document.querySelectorAll(".check");
-        const deleteButton = document.getElementById("deleteSelectedBtn");
-
-        const institutionNameText = document.getElementById("institutionNameText");
-        const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
-
-        // Menampilkan atau menyembunyikan button Delete
-        checkboxes.forEach((checkbox) => {
-            checkbox.addEventListener("change", function () {
-            const selectedCheckbox = document.querySelector(".check:checked");
-
-            deleteButton.style.display = selectedCheckbox ? "inline-block" : "none";
-            });
-        });
-
-        // Ketika button Delete diklik
-        deleteButton.addEventListener("click", function () {
-            const selectedCheckbox = document.querySelector(".check:checked");
-
-            if (!selectedCheckbox) {
-            return;
-            }
-
-            const id = selectedCheckbox.value;
-            const name = selectedCheckbox.dataset.name;
-
-            // Mengisi informasi modal
-            institutionNameText.textContent = name;
-
-            // Mengarahkan konfirmasi ke route /delete
-            confirmDeleteBtn.href = `/delete?id=${encodeURIComponent(id)}`;
-
-            // Menampilkan modal
-            $("#deleteModal").modal("show");
-        });
-    </script>
-</body>
+  </body>
 </html>

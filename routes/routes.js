@@ -1,1435 +1,505 @@
 import express from "express";
 import db from "../config/database.js";
-import path from "path";
-import fs from "fs";
+import path from "node:path";
+import fs from "node:fs/promises";
 import bcrypt from "bcrypt";
 import { randomUUID } from "node:crypto";
-
-import { getDocumentConfig } from "../config/documentFields.js";
-
-
-import { 
-  upload, 
-  targetLocation
-} from "../middleware/upload.js";
-
-import { MAX_MB, MAX_FILE_SIZE } from "../config/uploadConfig.js";
+import upload from "../middleware/upload.js";
+import {
+  MAX_MB, MAX_FILES, MAX_TOTAL_SIZE, MAX_TOTAL_MB
+} from "../config/uploadConfig.js";
 
 const router = express.Router();
-
-async function dynamicUploadFields(req, res, next) {
-    try {
-        const { uploadFields } = await getDocumentConfig();
-
-        upload.fields(uploadFields)(req, res, next);
-
-    } catch (err) {
-        next(err);
-    }
-}
-
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-async function unlinkWithRetry(filePath, attempts = 4) {
-  for (let attempt = 1; attempt <= attempts; attempt++) {
-    try {
-      await fs.promises.unlink(filePath);
-      return;
-    } catch (err) {
-      if (err.code === "ENOENT") return;
-
-      if (attempt === attempts) throw err;
-
-      await sleep(200 * attempt);
-    }
-  }
-}
-
-async function removeDirectoryWithRetry(folderPath) {
-  await fs.promises.rm(folderPath, {
-    recursive: true,
-    force: true,
-    maxRetries: 5,
-    retryDelay: 200
-  });
-}
-
-function resolveSafePath(basePath, ...segments) {
-  const resolvedBase = path.resolve(basePath);
-  const resolvedTarget = path.resolve(resolvedBase, ...segments);
-  const relativePath = path.relative(resolvedBase, resolvedTarget);
-
-  if (
-    !relativePath ||
-    relativePath.startsWith("..") ||
-    path.isAbsolute(relativePath)
-  ) {
-    throw new Error("INVALID_PATH");
-  }
-
-  return resolvedTarget;
-}
-
-
-router.get("/", checkAuth, async (req, res) => {
-  try {
-    const { documentForm } = await getDocumentConfig();
-
-    const baseDocumentCount =
-      documentForm.integration.length +
-      documentForm.aspi.length +
-      documentForm.functionality.length;   
-
-      const dataDb = (await db.query("SELECT * FROM upload_document ORDER BY id ASC")).rows;
-      let tableData = "";
-
-      let data = {
-        institution: "",
-        integration: "",
-        create_date: "",
-        rowData: "",
-        message: req.flash("success")[0] || ""
-      };
-
-      if(dataDb.length > 0) {
-        for(let i = 0; i < dataDb.length; i++) {
-          const totalDocument = dataDb[i];
-
-          const selectedApi = documentForm.apiDocuments.find(
-              api => api.name === totalDocument.api_name
-          );
-
-          const apiDocumentCount = selectedApi
-              ? selectedApi.documents.length
-              : 0;
-
-          const targetDocument = baseDocumentCount + apiDocumentCount;
-
-          const filesArray = typeof totalDocument.uploaded_files === "string" ? JSON.parse(totalDocument.uploaded_files) : (totalDocument.uploaded_files || []);
-          tableData += `<div class="row no-gutters p-3 text-center align-items-center border-bottom" style="font-size: 0.9rem; background-color: #fff;">
-                            <div class="col-1 d-flex align-items-center justify-content-start pl-3">
-                                <div style="width: 32px;" class="text-left">
-                                    <input type="checkbox" id="check_${dataDb[i].id}" class="check" value="${dataDb[i].id}" data-name="${dataDb[i].name}" />
-                                </div>
-                                <span class="font-weight-bold text-muted pl-1">${i + 1}</span>
-                            </div>
-                            <div class="col-2 text-left font-weight-bold text-dark pl-3">${dataDb[i].name}</div>
-                            <div class="col-3 text-left text-secondary">${dataDb[i].api_name} ${dataDb[i].va_type || ''}</div>
-                            <div class="col-2 text-left text-dark">${String(dataDb[i].created_at).slice(0, 24)}</div>
-                            <div class="col-2 text-left text-dark">${String(dataDb[i].updated_at).slice(0, 24)}</div>
-                            <div class="col-1 text-center font-weight-bold">${filesArray.length}/${targetDocument}</div>
-                            <div class="col-1">
-                                <a class="btn btn-outline-primary btn-sm" href="/read_data?id=${dataDb[i].id}">View</a>
-                            </div>
-                        </div>`;
-        }
-        data.rowData = tableData;
-      } else {
-        data.rowData = `<div class="row no-gutters p-4 text-center bg-white text-muted justify-content-center">Belum ada data integrasi API.</div>`;
-      }
-
-      res.render("index.ejs", data);
-  } catch(err) {
-      console.log(err);
-      res.status(500).send("Terjadi kesalahan pada server. Silakan coba beberapa saat lagi.");
-  }
-});
-
-
-router.get("/upload", checkAuth, async (req, res) => {
-    try {
-        const { documentForm } = await getDocumentConfig();
-        const result = (await db.query(`SELECT name, document_names FROM document_name ORDER BY name ASC`)).rows;
-
-        if (!result) {
-          return res.status(404).send("Data tidak ditemukan.");
-        }
-
-        const documentCategory = result.map(row => `<option value="${row.name}">${row.name}</option>`).join("");     
-
-        res.render("upload.ejs", {
-            message: req.flash("success")[0] || "",
-            errorMessage: req.flash("error")[0] || "",
-
-            maxMB: MAX_MB,
-            maxFileSize: MAX_FILE_SIZE,
-
-            documentCategory: documentCategory,
-            documentForm
-        });
-
-    } catch (err) {
-        console.error("Error GET /upload:", err);
-        req.flash("error", "Terjadi kesalahan server saat mengunggah dokumen. Silakan coba lagi.");
-        return res.redirect("/upload");
-    }
-});
-
-
-router.post("/upload", checkAuth, dynamicUploadFields, async (req, res) => {
-  try {
-      if (!req.files || Object.keys(req.files).length === 0) {
-        req.flash("error", "Anda belum upload dokumen!")
-        return res.redirect("/upload");
-      }
-
-      const institution = req.body.institutionName || "Unknown";
-      let integration = req.body.integrationType || "General";
-      const vaType = req.body.vaType || " ";
-      const date = new Date().toLocaleString('sv-SE');
-
-      const uploadedDocuments = [];
-      let folderName = "Unknown-Folder";
-
-      for (const fieldName in req.files) {
-        const fileObject = req.files[fieldName][0]; 
-        const filenameWithExt = fileObject.filename; 
-        
-        uploadedDocuments.push(filenameWithExt);
-
-        if (folderName === "Unknown-Folder" && fileObject.destination) {
-          folderName = path.basename(fileObject.destination);
-        }
-      };
-  
-      await db.query("INSERT INTO upload_document (name, api_name, va_type, folder_name, created_at, updated_at, uploaded_files) VALUES ($1, $2, $3, $4, $5, $6, $7)", [institution, integration, vaType, folderName, date, date, JSON.stringify(uploadedDocuments)]);
-
-      req.flash("success", "Dokumen berhasil diupload");
-      return res.redirect("/");
-  } catch(err) {
-      console.log(err);
-      res.status(500).send("Terjadi kesalahan pada server. Silakan coba beberapa saat lagi.");
-  }
-});
-
-
-router.get("/read_data", checkAuth, async (req, res) => {
-  try {
-    const { documentForm, requiredDocuments} = await getDocumentConfig();
-    const id = req.query.id;
-
-    if (!id || id === "") {
-      return res.status(400).send("ID data tidak valid.");
-    }
-
-    const dataDb = (await db.query("SELECT * FROM upload_document WHERE id = $1", [id])).rows;
-    const targetData = dataDb[0]; 
-
-    if (!targetData) {
-      return res.status(404).send("Data yang anda cari tidak ditemukan!.");
-    }
-
-    let uploaded_file = [];
-    const dbFiles = targetData.uploaded_files;
-    if (dbFiles) {
-      try {
-        uploaded_file = typeof dbFiles === "string" ? JSON.parse(dbFiles) : dbFiles;
-      } catch (err) {
-        console.log("Gagal parse JSON dari DB, beralih ke array kosong.");
-      }
-    }
-
-    let fields = {};
-
-    for (let i = 0; i < requiredDocuments.length; i++) {
-      const docName = requiredDocuments[i];
-
-      const foundFileName = uploaded_file.find(function(file) {
-        return file.startsWith(docName);
-      });
-      
-      let isUploaded = (foundFileName !== undefined);
-
-      if (isUploaded) {
-        fields[docName] = `<div class="custom-file">
-                              <input type="file" class="custom-file-input" name="${docName}" id="doc_${i}" accept=".pdf,.doc,.docx,.xls,.xlsx" disabled />
-                              <label class="custom-file-label text-truncate text-success" for="doc_${i}" id="label_doc_${i}" data-browse="🔒︎" style="padding-right: 15px; font-weight: 500;" >
-                                ${foundFileName}
-                              </label>
-                           </div>
-                           <small class="form-text text-muted"> Document has been saved. Click <a href="/view_file?id=${id}&fileName=${foundFileName}" target="_blank" class="font-weight-bold text-primary">here to view</a></a> this document.</small>`;
-      } else {
-        fields[docName] = `<div class="custom-file">
-                              <input type="file" class="custom-file-input" name="${docName}" id="doc_${i}" accept=".pdf,.doc,.docx,.xls,.xlsx" disabled>
-                              <label class="custom-file-label text-truncate text-muted" id="label_doc_${i}" for="doc_${i}" data-browse="📄" style="padding-right: 15px;">Belum ada dokumen</label>
-                          </div>
-                          <small class="form-text text-muted text-danger">Dokumen ini belum diunggah.</small>`;
-      }
-    }
-
-    const formatCreateDate = targetData.created_at ? targetData.created_at.toString().slice(0, 33) : "-";
-    
-    let data = {
-      id: id,
-      institution: targetData.name, 
-      integration: targetData.api_name,
-      vaType: targetData.va_type,
-      create_date: formatCreateDate,
-      message: req.flash("success")[0] || "",
-      errorMessage: req.flash("error")[0] || "",
-      fields: fields,
-      maxMB: MAX_MB,
-      maxFileSize: MAX_FILE_SIZE,
-      documentForm: documentForm
-    };
-
-    res.render("read_data.ejs", data);
-
-  } catch (err) {
-    console.error("Error pada rute read_data:", err);
-    res.status(500).send("Terjadi kesalahan pada sistem.");
-  }
-});
-
-
-
-router.get("/view_file", checkAuth, async (req, res) => {
-  try {
-    const id = req.query.id;
-    const fileName = req.query.fileName;
-
-    if (typeof id === "undefined" || id === "") {
-      return res.status(400).send("ID data tidak valid.");
-    }
-
-    if (!fileName || typeof fileName !== "string") {
-      return res.status(400).send("Nama file wajib diisi.");
-    }
-
-    if (path.basename(fileName) !== fileName) {
-      return res.status(400).send("Nama file tidak valid.");
-    }
-
-    const dataDb = (await db.query("SELECT * FROM upload_document WHERE id = $1", [id])).rows;
-
-    if (dataDb.length === 0) {
-      return res.status(404).send("Data integrasi tidak ditemukan.");
-    }
-
-    const targetData = dataDb[0];
-    let uploadedFiles = [];
-
-    try {
-      uploadedFiles = typeof targetData.uploaded_files === "string" ? JSON.parse(targetData.uploaded_files) : targetData.uploaded_files || [];
-    } catch (err) {
-      console.error("Format uploaded_files tidak valid:", err);
-      return res.status(500).send("Data dokumen pada database tidak valid.");
-    }
-
-    if (!uploadedFiles.includes(fileName)) {
-      return res.status(404).send("Dokumen tidak terdaftar pada integrasi ini.");
-    }
-
-    const savedFolderName = targetData.folder_name;
-    const baseFolder = path.resolve(process.cwd(), "data", "uploaded_file");
-    const absoluteFilePath = path.resolve(baseFolder, savedFolderName, fileName);
-
-    const relativeFile = path.relative(baseFolder, absoluteFilePath);
-    if (!relativeFile || relativeFile === ".." || relativeFile.startsWith(`..${path.sep}`) || path.isAbsolute(relativeFile)) {
-      return res.status(403).send("Akses dokumen ditolak.");
-    }
-
-    try {
-      const fileStat = await fs.promises.stat(absoluteFilePath);
-      if (!fileStat.isFile()) {
-        return res.status(404).send("Berkas tidak ditemukan.");
-      }
-
-      const ext = path.extname(fileName).toLowerCase();
-      let contentType = "application/octet-stream";
-      
-      if (ext === ".pdf") contentType = "application/pdf";
-      else if (ext === ".docx") contentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-      else if (ext === ".doc") contentType = "application/msword";
-      else if (ext === ".xlsx") contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-      else if (ext === ".xls") contentType = "application/vnd.ms-excel";
-
-      res.setHeader("Content-Type", contentType);
-      res.setHeader("Content-Disposition", `inline; filename="${fileName}"`);
-      
-      const fileStream = fs.createReadStream(absoluteFilePath);
-      fileStream.pipe(res);
-
-    } catch (err) {
-      return res.status(404).send("Berkas fisik tidak ditemukan di dalam folder penyimpanan server.");
-    }
-  } catch (err) {
-    console.error("Error pada view_file:", err);
-    res.status(500).send("Terjadi kesalahan sistem saat memproses penampilan berkas.");
-  }
-});
-
-
-
-router.get("/delete_file", checkAuth, async (req, res) => {
-  const { id, fileName } = req.query;
-
-  let client;
-  let transactionStarted = false;
-  let committed = false;
-
-  let sourcePath = null;
-  let quarantinePath = null;
-  let movedToQuarantine = false;
-
-  try {
-    if (!id || typeof id !== "string" ||
-        !fileName || typeof fileName !== "string") {
-      return res.status(400).send("ID dan nama file wajib diisi.");
-    }
-
-    if (
-      fileName !== path.basename(fileName) ||
-      fileName.includes("/") ||
-      fileName.includes("\\") ||
-      fileName.startsWith(".")
-    ) {
-      return res.status(400).send("Nama file tidak valid.");
-    }
-
-    client = await db.connect();
-
-    await client.query("BEGIN");
-    transactionStarted = true;
-
-    const result = await client.query(
-      `SELECT folder_name, uploaded_files
-       FROM upload_document
-       WHERE id = $1
-       FOR UPDATE`,
-      [id]
-    );
-
-    if (result.rows.length === 0) {
-      await client.query("ROLLBACK");
-      transactionStarted = false;
-
-      return res.status(404).send("Data integrasi tidak ditemukan.");
-    }
-
-    const { folder_name, uploaded_files } = result.rows[0];
-
-    if (
-      !folder_name ||
-      folder_name !== path.basename(folder_name) ||
-      folder_name.includes("/") ||
-      folder_name.includes("\\")
-    ) {
-      throw new Error("INVALID_FOLDER");
-    }
-
-    let uploadedDocuments = [];
-
-    try {
-      uploadedDocuments = typeof uploaded_files === "string"
-        ? JSON.parse(uploaded_files)
-        : uploaded_files || [];
-    } catch {
-      throw new Error("INVALID_DOCUMENT_DATA");
-    }
-
-    if (!Array.isArray(uploadedDocuments)) {
-      throw new Error("INVALID_DOCUMENT_DATA");
-    }
-
-    if (!uploadedDocuments.includes(fileName)) {
-      await client.query("ROLLBACK");
-      transactionStarted = false;
-
-      return res.status(404).send("Dokumen tidak ditemukan.");
-    }
-
-    const baseFolder = path.resolve(
-      process.cwd(),
-      "data",
-      "uploaded_file"
-    );
-
-    const folderPath = resolveSafePath(baseFolder, folder_name);
-    sourcePath = resolveSafePath(folderPath, fileName);
-
-    quarantinePath = path.join(
-      folderPath,
-      `.deleting-${randomUUID()}`
-    );
-
-    try {
-      await fs.promises.rename(sourcePath, quarantinePath);
-      movedToQuarantine = true;
-    } catch (err) {
-      if (err.code !== "ENOENT") {
-        throw err;
-      }
-    }
-
-    const updatedDocuments = uploadedDocuments.filter(
-      file => file !== fileName
-    );
-
-    await client.query(
-      `UPDATE upload_document
-       SET uploaded_files = $1,
-           updated_at = $2
-       WHERE id = $3`,
-      [
-        JSON.stringify(updatedDocuments),
-        new Date().toLocaleString("sv-SE"),
-        id
-      ]
-    );
-
-    await client.query("COMMIT");
-    committed = true;
-    transactionStarted = false;
-
-    if (movedToQuarantine) {
-      try {
-        await unlinkWithRetry(quarantinePath);
-      } catch (cleanupError) {
-        console.error(
-          "File quarantine belum berhasil dibersihkan:",
-          quarantinePath,
-          cleanupError
-        );
-      }
-    }
-
-    req.flash("success", "Dokumen berhasil dihapus!");
-    return res.redirect(`/update_data?id=${encodeURIComponent(id)}`);
-
-  } catch (err) {
-    console.error("Error DELETE FILE:", err);
-
-    if (client && transactionStarted && !committed) {
-      try {
-        await client.query("ROLLBACK");
-      } catch (rollbackError) {
-        console.error("Rollback gagal:", rollbackError);
-      }
-
-      transactionStarted = false;
-    }
-
-    if (movedToQuarantine && !committed) {
-      try {
-        await fs.promises.rename(quarantinePath, sourcePath);
-      } catch (restoreError) {
-        console.error(
-          "PERHATIAN: Gagal mengembalikan file:",
-          restoreError
-        );
-      }
-    }
-
-    if (err.message === "INVALID_PATH") {
-      return res.status(403).send("Akses file ditolak.");
-    }
-
-    if (err.message === "INVALID_FOLDER") {
-      return res.status(400).send("Nama folder tidak valid.");
-    }
-
-    if (err.message === "INVALID_DOCUMENT_DATA") {
-      return res.status(500).send("Data dokumen di database tidak valid.");
-    }
-
-    return res.status(500).send(
-      "Gagal menghapus dokumen. Silakan periksa log server."
-    );
-
-  } finally {
-    if (client) client.release();
-  }
-});
-
-
-router.get("/update_data", checkAuth, async (req, res) => {
-  try {
-    const { documentForm, requiredDocuments } = await getDocumentConfig();
-    const id = req.query.id;
-    if (!id || id === "") {
-      return res.status(400).send("ID data tidak valid.");
-    }
-
-    const dataDb = (await db.query("SELECT * FROM upload_document WHERE id = $1", [id])).rows;
-    const targetData = dataDb[0]; 
-
-    if (!targetData) {
-      return res.status(404).send("Data tidak ditemukan.");
-    }
-
-    let uploaded_file = [];
-    if (targetData.uploaded_files) {
-      uploaded_file = typeof targetData.uploaded_files === "string" ? JSON.parse(targetData.uploaded_files) : targetData.uploaded_files;
-    }
-
-    let fields = {};
-    for (let i = 0; i < requiredDocuments.length; i++) {
-      const docName = requiredDocuments[i];
-      const foundFileName = uploaded_file.find(file => file.startsWith(docName));
-      
-      if (foundFileName) {
-        fields[docName] = `<div class="custom-file">
-                              <input type="file" class="custom-file-input" name="${docName}" id="doc_${i}" accept=".pdf,.doc,.docx,.xls,.xlsx" style="cursor: pointer;" />
-                              <label class="custom-file-label text-truncate text-success" for="doc_${i}" id="label_doc_${i}" data-browse="🗙" style="padding-right: 50px; font-weight: 500;">
-                                ${foundFileName}
-                              </label>
-                              <button type="button" class="position-absolute h-100 d-flex align-items-center justify-content-center text-decoration-none text-secondary"  style="right: 0; top: 0; width: 42px; z-index: 10; background-color: #e9ecef; border-left: 1px solid #ced4da; border-radius: 0 0.25rem 0.25rem 0; font-size: 16px; cursor: pointer; border: none;" title="Hapus berkas ini" data-toggle="modal" data-target="#modalDeleteConfirmation" data-id="${id}" data-filename="${foundFileName}">
-                                  🗙
-                              </button>
-                           </div>
-                           <small class="form-text text-muted">File has been saved.</small>`;
-      } else {
-        fields[docName] = `<div class="custom-file">
-                              <input type="file" class="custom-file-input" name="${docName}" id="doc_${i}" accept=".pdf,.doc,.docx,.xls,.xlsx">
-                              <label class="custom-file-label text-truncate text-muted" id="label_doc_${i}" for="doc_${i}" data-browse="📄" style="padding-right: 50px;">Choose file</label>
-                           </div>
-                           <small class="form-text text-muted">File formats: PDF, DOCX, XLSX.</small>`;
-      }
-    }
-
-    res.render("update_data.ejs", {
-        id: id,
-        institution: targetData.name,
-        integration: targetData.api_name,
-        vaType: targetData.va_type,
-        create_date: targetData.created_at
-            ? targetData.created_at.toString().slice(0, 33)
-            : "-",
-        message: req.flash("success")[0] || "",
-        errorMessage: req.flash("error")[0] || "",
-        fields: fields,
-        documentForm: documentForm,
-        maxMB: MAX_MB,
-        maxFileSize: MAX_FILE_SIZE
-    });
-
-  } catch (err) {
-    console.error("Error pada rute update_data GET:", err);
-    res.status(500).send("Terjadi kesalahan sistem.");
-  }
-});
-
-
-router.post("/update_data", checkAuth, dynamicUploadFields, async (req, res) => {
-  try {
-    const id = req.query.id;
-    if (!id || id === "") {
-      return res.status(400).send("ID data tidak valid.");
-    }
-
-    if (!req.files || Object.keys(req.files).length === 0) {
-        req.flash("error", "Anda belum memilih dokumen baru untuk diperbarui!");
-        return res.redirect(`/update_data?id=${id}`);
-      };
-
-    const dataDb = (await db.query("SELECT * FROM upload_document WHERE id = $1", [id])).rows;
-    const targetData = dataDb[0];
-    const date = new Date().toLocaleString('sv-SE');
-
-    if (!targetData) {
-      return res.status(404).send("Data tidak ditemukan.");
-    }
-
-    let uploadedDocuments = [];
-    if (targetData.uploaded_files) {
-      try {
-        uploadedDocuments = typeof targetData.uploaded_files === "string"
-          ? JSON.parse(targetData.uploaded_files)
-          : targetData.uploaded_files;
-      } catch (e) {
-        console.log("Gagal parse JSON dari DB, inisialisasi array kosong.");
-        uploadedDocuments = [];
-      }
-    }
-
-    if (req.files && Object.keys(req.files).length > 0) {
-      const fullFolderPath = path.join(targetLocation, targetData.folder_name);
-
-      for (const fieldName in req.files) {
-        const fileObject = req.files[fieldName][0];
-        const newFilenameWithExt = fileObject.filename;
-
-        const oldFileIndex = uploadedDocuments.findIndex(file => file.startsWith(fieldName));
-
-        if (oldFileIndex !== -1) {
-          const oldFilename = uploadedDocuments[oldFileIndex];
-          const oldFilePath = path.join(fullFolderPath, oldFilename);
-          
-          if (fs.existsSync(oldFilePath)) {
-            fs.unlinkSync(oldFilePath);
-          }
-
-          uploadedDocuments[oldFileIndex] = newFilenameWithExt;
-        } else {
-          uploadedDocuments.push(newFilenameWithExt);
-        }
-      }
-    }
-
-    await db.query("UPDATE upload_document SET uploaded_files = $1, updated_at = $2 WHERE id = $3", [JSON.stringify(uploadedDocuments), date, id]);  
-
-    req.flash("success", "Dokumen berhasil diperbarui!");
-    return res.redirect("/");
-    // res.redirect(`/read_data?id=${id}`);
-
-  } catch (err) {
-    console.error("Error pada rute update_data:", err);
-    res.status(500).send("Terjadi kesalahan sistem saat memperbarui berkas.");
-  }
-});
-
-
-
-
-router.get("/delete", checkAuth, async (req, res) => {
-  const { id } = req.query;
-
-  let client;
-  let transactionStarted = false;
-  let committed = false;
-
-  let originalFolder = null;
-  let quarantineFolder = null;
-  let movedToQuarantine = false;
-
-  try {
-    if (!id || typeof id !== "string") {
-      return res.status(400).send("ID data tidak valid.");
-    }
-
-    client = await db.connect();
-
-    await client.query("BEGIN");
-    transactionStarted = true;
-
-    const result = await client.query(
-      `SELECT folder_name
-       FROM upload_document
-       WHERE id = $1
-       FOR UPDATE`,
-      [id]
-    );
-
-    if (result.rows.length === 0) {
-      await client.query("ROLLBACK");
-      transactionStarted = false;
-
-      return res.status(404).send(
-        "Data integrasi tidak ditemukan."
-      );
-    }
-
-    const folderName = result.rows[0].folder_name;
-
-    if (folderName) {
-      if (
-        folderName !== path.basename(folderName) ||
-        folderName.includes("/") ||
-        folderName.includes("\\")
-      ) {
-        throw new Error("INVALID_FOLDER");
-      }
-
-      const baseFolder = path.resolve(
-        process.cwd(),
-        "data",
-        "uploaded_file"
-      );
-
-      originalFolder = resolveSafePath(
-        baseFolder,
-        folderName
-      );
-
-      quarantineFolder = path.join(
-        baseFolder,
-        `.deleting-${randomUUID()}`
-      );
-
-      try {
-        await fs.promises.rename(
-          originalFolder,
-          quarantineFolder
-        );
-
-        movedToQuarantine = true;
-
-      } catch (err) {
-
-        if (err.code !== "ENOENT") {
-          throw err;
-        }
-      }
-    }
-
-    await client.query("DELETE FROM upload_document WHERE id = $1", [id]);
-
-    await client.query("COMMIT");
-    committed = true;
-    transactionStarted = false;
-
-    if (movedToQuarantine) {
-      try {
-        await removeDirectoryWithRetry(quarantineFolder);
-      } catch (cleanupError) {
-        console.error(
-          "Folder quarantine belum berhasil dibersihkan:",
-          quarantineFolder,
-          cleanupError
-        );
-      }
-    }
-
-    req.flash("success", "Mitra berhasil dihapus!");
-
-    return res.redirect("/");
-
-  } catch (err) {
-    console.error("Error DELETE INTEGRATION:", err);
-
-    if (client && transactionStarted && !committed) {
-      try {
-        await client.query("ROLLBACK");
-      } catch (rollbackError) {
-        console.error("Rollback gagal:", rollbackError);
-      }
-
-      transactionStarted = false;
-    }
-
-    if (movedToQuarantine && !committed) {
-      try {
-        await fs.promises.rename(
-          quarantineFolder,
-          originalFolder
-        );
-      } catch (restoreError) {
-        console.error("PERHATIAN: Gagal mengembalikan folder:", restoreError);
-      }
-    }
-
-    if (err.message === "INVALID_PATH") {
-      return res.status(403).send("Akses folder ditolak.");
-    }
-
-    if (err.message === "INVALID_FOLDER") {
-      return res.status(400).send("Nama folder tidak valid.");
-    }
-
-    return res.status(500).send(
-      "Gagal menghapus data integrasi. Silakan periksa log server."
-    );
-
-  } finally {
-    if (client) client.release();
-  }
-});
-
-
-router.get("/api_names", checkAuth, async (req, res) => {
-  try {
-    const dataDb = (await db.query("SELECT * FROM document_name")).rows;
-    
-    let rowData = "";
-    for(let i = 0; i < dataDb.length; i++) {
-      const row = dataDb[i];
-      const totalDocs = row.document_names ? (Array.isArray(row.document_names) ? row.document_names.length : 1) : 0;
-      rowData += `<tr>
-                      <td class="text-center align-middle">${i + 1}</td>
-                      <td class="align-middle">${row.name}</td>
-                      <td class="align-middle">${totalDocs} Documents</td>
-                      <td class="text-center align-middle">
-                          <button type="button" class="btn btn-sm btn-outline-secondary" 
-                              data-toggle="modal" 
-                              data-target="#modalEditDocument" 
-                              data-id="${row.id || ''}"
-                              data-name="${row.name}">
-                              Edit
-                          </button>
-
-                          <form action="/document_names/delete" method="POST" class="d-inline">
-                              <input type="hidden" name="id" value="${row.id || ''}">
-                              <input type="hidden" name="documentName" value="${row.name}">
-                              
-                              <button type="button" class="btn btn-sm btn-outline-danger btn-trigger-delete" 
-                                  data-toggle="modal" 
-                                  data-target="#modalDeleteConfirmation" 
-                                  data-id="${row.id || ''}" 
-                                  data-document="${row.name}">
-                                  Delete
-                              </button>
-                          </form>
-                      </td>
-                  </tr>`;
-    }
-
-    return res.render("add_api_name.ejs", { rowData: rowData });
-  } catch(err) {
-    console.error("Error GET /api_names:", err); //  Disamakan dengan nama rutenya agar log akurat
-    return res.status(500).send(
-      "Terjadi kesalahan saat mengambil data dokumen."
-    );
-  }
-});
-
-
-router.post("/api_names", checkAuth, async (req, res) => {
-  try {
-    let apiName = req.body.apiName;
-
-    if (!apiName || apiName.trim() === "") {
-        req.flash("error", "Nama API tidak boleh kosong!");
-        return res.redirect("/api_names");
-    }
-
-    apiName = apiName.trim();
-
-    if (apiName.length > 150) {
-        req.flash("error", "Nama API terlalu panjang! Maksimal 150 karakter.");
-        return res.redirect("/api_names");
-    }
-
-    apiName = apiName
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#x27;");
-
-    const checkDuplicate = await db.query(
-        "SELECT id FROM document_name WHERE name ILIKE $1", 
-        [apiName]
-    );
-
-    if (checkDuplicate.rows.length > 0) {
-        req.flash("error", `API dengan nama "${apiName}" sudah terdaftar!`);
-        return res.redirect("/api_names");
-    }
-
-    console.log("Menambahkan API Baru yang Aman:", apiName);
-    await db.query(
-        "INSERT INTO document_name (name, document_names) VALUES ($1, $2)", 
-        [apiName, JSON.stringify([])]
-    );
-
-    req.flash("success", "API Baru berhasil ditambahkan!");
-    return res.redirect("/api_names");
-
-  } catch(err) {
-    console.error("Error POST /api_names:", err); 
-    req.flash("error", "Terjadi kesalahan server saat menyimpan data API baru.");
-    return res.redirect("/api_names");
-  }
-});
-
-
-
-router.get("/document_names", checkAuth, async (req, res) => {
-    try {
-        const result = (await db.query(`SELECT name, document_names FROM document_name ORDER BY name ASC`)).rows;
-
-        if (!result) {
-          return res.status(404).send("Data tidak ditemukan.");
-        }
-
-        const documentCategory = result.map(row => `<option value="${row.name}">${row.name}</option>`).join("");
-
-        const documentGroups = result.map(row => {
-            let documents = row.document_names || [];
-
-            if (typeof documents === "string") {
-                documents = JSON.parse(documents);
-            }
-
-            return {
-                name: row.name,
-                documents: documents.map(document => ({
-                    name: document
-                }))
-            };
-        });
-
-        return res.render("add_document_name.ejs", {
-            documentGroups,
-            message: req.flash("success")[0] || "",
-            errorMessage: req.flash("error")[0] || "",
-            documentCategory: documentCategory
-        });
-
-    } catch (err) {
-        console.error("Error GET /document_names:", err);
-
-        return res.status(500).send(
-            "Terjadi kesalahan saat mengambil data dokumen."
-        );
-    }
-});
-
-
-router.post("/document_names", checkAuth, async (req, res) => {
-    let client;
-
-    try {
-        const category = req.body.category;
-        const documentName = req.body.documentName;
-
-        if (
-            typeof category !== "string" ||
-            typeof documentName !== "string"
-        ) {
-            req.flash("error", "Data dokumen tidak valid.");
-            return res.redirect("/document_names");
-        }
-
-        const cleanCategory = category.trim();
-        const cleanDocumentName = documentName.trim();
-
-        if (
-            !cleanDocumentName ||
-            cleanDocumentName.length > 150
-        ) {
-            req.flash("error", "Nama dokumen wajib diisi dan maksimal 150 karakter.");
-
-            return res.redirect("/document_names");
-        }
-
-        client = await db.connect();
-
-        await client.query("BEGIN");
-
-        const result = await client.query(`SELECT document_names, pg_typeof(document_names)::text AS data_type FROM document_name WHERE name = $1 FOR UPDATE`, [cleanCategory]);
-
-        if (result.rows.length === 0) {
-            await client.query("ROLLBACK");
-
-            req.flash("error", "Kategori dokumen tidak ditemukan.");
-            return res.redirect("/document_names");
-        }
-
-        const targetData = result.rows[0];
-
-        let documents = targetData.document_names || [];
-
-        if (typeof documents === "string") {
-            documents = JSON.parse(documents);
-        }
-
-        if (!Array.isArray(documents)) {
-            throw new Error("INVALID_DOCUMENT_FORMAT");
-        }
-
-        const isDuplicate = documents.some(document =>
-            String(document).trim().toLowerCase() ===
-            cleanDocumentName.toLowerCase()
-        );
-
-        if (isDuplicate) {
-            await client.query("ROLLBACK");
-
-            req.flash("error", "Nama dokumen sudah terdaftar pada kategori ini.");
-            return res.redirect("/document_names");
-        }
-
-        const updatedDocuments = [...documents, cleanDocumentName];
-
-        let updateValue;
-        let castExpression = "$1";
-
-        if (targetData.data_type === "jsonb") {
-            updateValue = JSON.stringify(updatedDocuments);
-            castExpression = "$1::jsonb";
-        } else if (targetData.data_type === "json") {
-            updateValue = JSON.stringify(updatedDocuments);
-            castExpression = "$1::json";
-        } else if (targetData.data_type === "text") {
-            updateValue = JSON.stringify(updatedDocuments);
-        } else {
-            updateValue = updatedDocuments;
-        }
-
-        await client.query( `UPDATE document_name SET document_names = ${castExpression} WHERE name = $2`, [updateValue, cleanCategory]);
-
-        await client.query("COMMIT");
-
-        req.flash("success", "Nama dokumen berhasil ditambahkan!");
-
-        return res.redirect("/document_names");
-
-    } catch (err) {
-        if (client) {
-            try {
-                await client.query("ROLLBACK");
-            } catch (rollbackError) {
-                console.error("Rollback gagal:", rollbackError);
-            }
-        }
-
-        console.error("Error POST /document_names:", err);
-
-        if (err.message === "INVALID_DOCUMENT_FORMAT") {
-            req.flash("error", "Format daftar dokumen pada database tidak valid.");
-            return res.redirect("/document_names");
-        }
-
-        req.flash("error", "Gagal menambahkan nama dokumen.");
-        return res.redirect("/document_names");
-
-    } finally {
-        if (client) client.release();
-    }
-});
-
-
-
-router.post("/document_names/update", checkAuth, async (req, res) => {
-    let client;
-
-    try {
-        const {
-            category,
-            oldDocumentName,
-            newDocumentName
-        } = req.body;
-
-        const cleanCategory = category?.trim();
-        const oldName = oldDocumentName?.trim();
-        const newName = newDocumentName?.trim();
-
-        if (!cleanCategory || !oldName || !newName || newName.length > 150) {
-            req.flash("error", "Data perubahan dokumen tidak valid.");
-            return res.redirect("/document_names");
-        }
-
-        if (oldName === newName) {
-            req.flash("error", "Tidak ada perubahan nama dokumen.");
-            return res.redirect("/document_names");
-        }
-
-        const { requiredDocuments } = await getDocumentConfig();
-
-        const duplicate = requiredDocuments.some(name =>
-            name.toLowerCase() === newName.toLowerCase() &&
-            name !== oldName
-        );
-
-        if (duplicate) {
-            req.flash("error", "Nama dokumen sudah digunakan oleh field lain.");
-            return res.redirect("/document_names");
-        }
-
-        client = await db.connect();
-        await client.query("BEGIN");
-
-        const result = await client.query(
-            `SELECT document_names,
-                    pg_typeof(document_names)::text AS data_type
-             FROM document_name
-             WHERE name = $1
-             FOR UPDATE`,
-            [cleanCategory]
-        );
-
-        if (result.rows.length === 0) {
-            throw new Error("CATEGORY_NOT_FOUND");
-        }
-
-        const target = result.rows[0];
-
-        let documents = target.document_names || [];
-
-        if (typeof documents === "string") {
-            documents = JSON.parse(documents);
-        }
-
-        if (!Array.isArray(documents)) {
-            throw new Error("INVALID_DOCUMENT_FORMAT");
-        }
-
-        const index = documents.findIndex(
-            name => String(name).trim() === oldName
-        );
-
-        if (index === -1) {
-            throw new Error("DOCUMENT_NOT_FOUND");
-        }
-
-        const uploadedResult = await client.query(
-            "SELECT uploaded_files FROM upload_document"
-        );
-
-        const alreadyUsed = uploadedResult.rows.some(row => {
-            let files = row.uploaded_files || [];
-
-            if (typeof files === "string") {
-                files = JSON.parse(files);
-            }
-
-            return Array.isArray(files) &&
-                files.some(file => file.startsWith(`${oldName}-`));
-        });
-
-        if (alreadyUsed) {
-            throw new Error("DOCUMENT_ALREADY_USED");
-        }
-
-        documents[index] = newName;
-
-        let updateValue;
-        let castExpression = "$1";
-
-        if (target.data_type === "jsonb") {
-            updateValue = JSON.stringify(documents);
-            castExpression = "$1::jsonb";
-        } else if (target.data_type === "json") {
-            updateValue = JSON.stringify(documents);
-            castExpression = "$1::json";
-        } else if (target.data_type === "text") {
-            updateValue = JSON.stringify(documents);
-        } else {
-            updateValue = documents;
-        }
-
-        await client.query(`UPDATE document_name SET document_names = ${castExpression} WHERE name = $2`, [updateValue, cleanCategory]);
-
-        await client.query("COMMIT");
-
-        req.flash("success", "Nama dokumen berhasil diperbarui!");
-        return res.redirect("/document_names");
-
-    } catch (err) {
-        if (client) {
-            await client.query("ROLLBACK").catch(console.error);
-        }
-
-        console.error("Error UPDATE document name:", err);
-
-        const messages = {
-            CATEGORY_NOT_FOUND: "Kategori dokumen tidak ditemukan.",
-            DOCUMENT_NOT_FOUND: "Nama dokumen tidak ditemukan.",
-            INVALID_DOCUMENT_FORMAT: "Format data dokumen tidak valid.",
-            DOCUMENT_ALREADY_USED:
-                "Nama tidak dapat diubah karena dokumen sudah pernah digunakan untuk upload."
-        };
-
-        req.flash(
-            "error",
-            messages[err.message] || "Gagal memperbarui nama dokumen."
-        );
-
-        return res.redirect("/document_names");
-
-    } finally {
-        if (client) client.release();
-    }
-});
-
-
-
-router.post("/document_names/delete", checkAuth, async (req, res) => {
-    let client;
-
-    try {
-        const category = req.body.category?.trim();
-        const documentName = req.body.documentName?.trim();
-
-        if (!category || !documentName) {
-            req.flash("error", "Data dokumen tidak valid.");
-            return res.redirect("/document_names");
-        }
-
-        client = await db.connect();
-        await client.query("BEGIN");
-
-        const result = await client.query(
-            `SELECT document_names,
-                    pg_typeof(document_names)::text AS data_type
-             FROM document_name
-             WHERE name = $1
-             FOR UPDATE`,
-            [category]
-        );
-
-        if (result.rows.length === 0) {
-            throw new Error("CATEGORY_NOT_FOUND");
-        }
-
-        const target = result.rows[0];
-
-        let documents = target.document_names || [];
-
-        if (typeof documents === "string") {
-            documents = JSON.parse(documents);
-        }
-
-        if (!Array.isArray(documents)) {
-            throw new Error("INVALID_DOCUMENT_FORMAT");
-        }
-
-        const exists = documents.some(
-            name => String(name).trim() === documentName
-        );
-
-        if (!exists) {
-            throw new Error("DOCUMENT_NOT_FOUND");
-        }
-
-        const uploadedResult = await client.query(
-            "SELECT uploaded_files FROM upload_document"
-        );
-
-        const alreadyUsed = uploadedResult.rows.some(row => {
-            let files = row.uploaded_files || [];
-
-            if (typeof files === "string") {
-                files = JSON.parse(files);
-            }
-
-            return Array.isArray(files) &&
-                files.some(file => file.startsWith(`${documentName}-`));
-        });
-
-        if (alreadyUsed) {
-            throw new Error("DOCUMENT_ALREADY_USED");
-        }
-
-        const updatedDocuments = documents.filter(
-            name => String(name).trim() !== documentName
-        );
-
-        let updateValue;
-        let castExpression = "$1";
-
-        if (target.data_type === "jsonb") {
-            updateValue = JSON.stringify(updatedDocuments);
-            castExpression = "$1::jsonb";
-        } else if (target.data_type === "json") {
-            updateValue = JSON.stringify(updatedDocuments);
-            castExpression = "$1::json";
-        } else if (target.data_type === "text") {
-            updateValue = JSON.stringify(updatedDocuments);
-        } else {
-            updateValue = updatedDocuments;
-        }
-
-        await client.query(
-            `UPDATE document_name
-             SET document_names = ${castExpression}
-             WHERE name = $2`,
-            [updateValue, category]
-        );
-
-        await client.query("COMMIT");
-
-        req.flash("success", "Nama dokumen berhasil dihapus!");
-        return res.redirect("/document_names");
-
-    } catch (err) {
-        if (client) {
-            await client.query("ROLLBACK").catch(console.error);
-        }
-
-        console.error("Error DELETE document name:", err);
-
-        const messages = {
-            CATEGORY_NOT_FOUND: "Kategori dokumen tidak ditemukan.",
-            DOCUMENT_NOT_FOUND: "Nama dokumen tidak ditemukan.",
-            INVALID_DOCUMENT_FORMAT: "Format data dokumen tidak valid.",
-            DOCUMENT_ALREADY_USED:
-                "Dokumen tidak dapat dihapus karena sudah pernah digunakan untuk upload."
-        };
-
-        req.flash(
-            "error",
-            messages[err.message] || "Gagal menghapus nama dokumen."
-        );
-
-        return res.redirect("/document_names");
-
-    } finally {
-        if (client) client.release();
-    }
-});
-
-
-
-router.get("/login", isAlreadyLoggedIn, async (req, res) => {
-  res.render("login.ejs");
-});
-
-router.post("/login", async (req, res) => {
-    const email = req.body.username;
-    const password = req.body.password;
-    
-  try {
-    // ================================================== Untuk Register =======================================================
-    // const saltRounds = 10;
-    // bcrypt.hash(password, saltRounds, async (err, hash) => {
-    //   await db.query("INSERT INTO users (username, password, accname, accnum) VALUES ($1, $2, $3, $4)", [password, hash, "Muhammad Ghossan Alkafi", Math.floor(Math.random() * 999)]);
-    // })
-    // ======================================================= end =============================================================
-
-    const dataDb = (await db.query("SELECT id, username, password FROM users WHERE username = $1", [email])).rows;
-
-    // =================================================== Untuk Login =========================================================
-    if(dataDb.length === 0) {
-      return res.status(400).send("Username atau password salah!.");
-    }
-
-    const targetData = dataDb[0];
-
-    if (!targetData) {
-          return res.status(404).send("Data yang anda cari tidak ditemukan!.");
-    }
-
-    const hashedPassword = targetData.password;
-    const isAuth = await bcrypt.compare(password, hashedPassword);
-
-    if(isAuth) {
-      req.session.userId = targetData.id;
-      req.session.username = targetData.username;
-      return res.redirect("/upload");
-    } else {
-      req.flash("error", "Username atau password salah!.");
-      return res.render("login.ejs");
-    }
-    // ======================================================= end =============================================================
-  } catch(err) {
-    console.error("Error pada route /login:", err);
-    res.status(500).send("Terjadi kesalahan sistem pada route /login.");
-  }
-});
+const STORAGE_ROOT = path.resolve(process.cwd(), "data", "uploaded_file");
+const allowedExt = new Set([".pdf", ".doc", ".docx", ".xls", ".xlsx"]);
 
 function checkAuth(req, res, next) {
-  if (req.session && req.session.userId) {
-    return next();
-  } else {
-    return res.redirect("/login");
-  }
+  if (req.session?.userId) return next();
+  return res.redirect("/login");
 }
 
 function isAlreadyLoggedIn(req, res, next) {
-  if (req.session && req.session.userId) {
-    return res.redirect("/upload");
-  }
+  if (req.session?.userId) return res.redirect("/");
   next();
 }
 
-router.get("/logout", (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      console.error("Gagal menghapus session:", err);
-      return res.status(500).send("Gagal logout.");
+function text(value, max = 255) {
+  return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
+
+function safeOriginalName(name) {
+  return path.basename(String(name || "document"))
+    .replace(/[\/\\]/g, "_")
+    .replace(/[\x00-\x1f\x7f]/g, "")
+    .slice(0, 255) || "document";
+}
+
+function displayNameFromFile(filename) {
+  return path.basename(filename, path.extname(filename))
+    .replace(/[_-]+/g, " ")
+    .trim();
+}
+
+function parseArray(value) {
+  if (value == null) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
+function ensureArray(value) {
+  return Array.isArray(value) ? value : (value == null ? [] : [value]);
+}
+
+function validateUploadBatch(files) {
+  if (!files?.length) throw new Error("Pilih setidaknya satu dokumen.");
+  if (files.length > MAX_FILES) throw new Error(`Maksimal ${MAX_FILES} dokumen dalam satu proses.`);
+  const total = files.reduce((sum, file) => sum + file.size, 0);
+  if (total > MAX_TOTAL_SIZE) throw new Error(`Total ukuran dokumen maksimal ${MAX_TOTAL_MB} MB.`);
+  for (const file of files) {
+    if (!allowedExt.has(path.extname(file.originalname || "").toLowerCase())) {
+      throw new Error("Ada file dengan format yang tidak didukung.");
     }
+  }
+}
+
+async function writeUploadedFile(file, folderPath) {
+  const originalName = safeOriginalName(file.originalname);
+  const ext = path.extname(originalName).toLowerCase();
+  const storedFilename = `${randomUUID()}${ext}`;
+  await fs.writeFile(path.join(folderPath, storedFilename), file.buffer, { flag: "wx" });
+  return {
+    document_name: "",
+    original_filename: originalName,
+    stored_filename: storedFilename,
+    mime_type: file.mimetype,
+    file_size: file.size
+  };
+}
+
+async function insertDocument(client, integrationId, metadata, documentName) {
+  await client.query(
+    `INSERT INTO uploaded_documents
+      (upload_document_id, document_name, original_filename, stored_filename, mime_type, file_size)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [
+      integrationId,
+      text(documentName, 255) || displayNameFromFile(metadata.original_filename),
+      metadata.original_filename,
+      metadata.stored_filename,
+      metadata.mime_type,
+      metadata.file_size
+    ]
+  );
+}
+
+async function getIntegration(id) {
+  const result = await db.query(
+    "SELECT * FROM upload_document WHERE id = $1",
+    [id]
+  );
+  return result.rows[0] || null;
+}
+
+function flashError(req, res, message, url) {
+  req.flash("error", message);
+  return res.redirect(url);
+}
+
+router.get("/", checkAuth, async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT i.*,
+             COUNT(d.id)::int AS uploaded_count
+      FROM upload_document i
+      LEFT JOIN uploaded_documents d ON d.upload_document_id = i.id
+      GROUP BY i.id
+      ORDER BY i.id DESC
+    `);
+    res.render("index.ejs", {
+      integrations: result.rows,
+      message: req.flash("success")[0] || "",
+      errorMessage: req.flash("error")[0] || ""
+    });
+  } catch (err) {
+    console.error("GET / error:", err);
+    res.status(500).send("Gagal mengambil data integrasi.");
+  }
+});
+
+router.get("/upload", checkAuth, (req, res) => {
+  res.render("upload.ejs", {
+    maxMB: MAX_MB,
+    maxFiles: MAX_FILES,
+    maxTotalMB: MAX_TOTAL_MB,
+    message: req.flash("success")[0] || "",
+    errorMessage: req.flash("error")[0] || ""
+  });
+});
+
+router.post("/upload", checkAuth, upload.array("documents", MAX_FILES), async (req, res) => {
+  const folderName = `integration-${randomUUID()}`;
+  const folderPath = path.join(STORAGE_ROOT, folderName);
+  let client;
+  let createdFiles = [];
+
+  try {
+    const files = req.files || [];
+    validateUploadBatch(files);
+
+    const institution = text(req.body.institutionName, 256);
+    const apiName = text(req.body.integrationType, 128);
+    const vaType = text(req.body.vaType, 64) || null;
+    const documentNames = ensureArray(req.body.documentNames);
+
+    if (!institution || !apiName) {
+      return flashError(req, res, "Nama mitra dan API Name wajib diisi.", "/upload");
+    }
+    if (documentNames.length !== files.length) {
+      return flashError(req, res, "Data nama dokumen tidak sesuai dengan jumlah file. Silakan pilih ulang dokumen.", "/upload");
+    }
+
+    await fs.mkdir(folderPath, { recursive: true });
+
+    client = await db.connect();
+    await client.query("BEGIN");
+
+    const integrationResult = await client.query(
+      `INSERT INTO upload_document
+        (name, api_name, va_type, folder_name, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+       RETURNING id`,
+      [institution, apiName, vaType, folderName]
+    );
+    const integrationId = integrationResult.rows[0].id;
+
+    for (let i = 0; i < files.length; i++) {
+      const metadata = await writeUploadedFile(files[i], folderPath);
+      createdFiles.push(metadata.stored_filename);
+      await insertDocument(client, integrationId, metadata, documentNames[i]);
+    }
+
+    await client.query("COMMIT");
+    req.flash("success", `${files.length} dokumen berhasil diunggah.`);
+    return res.redirect("/");
+  } catch (err) {
+    if (client) await client.query("ROLLBACK").catch(() => {});
+    if (createdFiles.length || folderName) {
+      await fs.rm(folderPath, { recursive: true, force: true }).catch(() => {});
+    }
+    console.error("POST /upload error:", err);
+    return flashError(req, res, err.message || "Gagal menyimpan dokumen.", "/upload");
+  } finally {
+    client?.release();
+  }
+});
+
+router.get("/read_data", checkAuth, async (req, res) => {
+  try {
+    const id = Number(req.query.id);
+    if (!Number.isInteger(id) || id <= 0) return res.status(400).send("ID integrasi tidak valid.");
+
+    const integration = await getIntegration(id);
+    if (!integration) return res.status(404).send("Data integrasi tidak ditemukan.");
+
+    const docs = await db.query(
+      `SELECT id, document_name, original_filename, mime_type, file_size, created_at
+       FROM uploaded_documents
+       WHERE upload_document_id = $1
+       ORDER BY id ASC`,
+      [id]
+    );
+
+    res.render("read_data.ejs", {
+      integration,
+      documents: docs.rows,
+      message: req.flash("success")[0] || "",
+      errorMessage: req.flash("error")[0] || ""
+    });
+  } catch (err) {
+    console.error("GET /read_data error:", err);
+    res.status(500).send("Gagal membaca data integrasi.");
+  }
+});
+
+router.get("/view_file", checkAuth, async (req, res) => {
+  try {
+    const docId = Number(req.query.documentId);
+    if (!Number.isInteger(docId) || docId <= 0) return res.status(400).send("ID dokumen tidak valid.");
+
+    const result = await db.query(
+      `SELECT d.*, i.folder_name
+       FROM uploaded_documents d
+       JOIN upload_document i ON i.id = d.upload_document_id
+       WHERE d.id = $1`,
+      [docId]
+    );
+    const doc = result.rows[0];
+    if (!doc) return res.status(404).send("Dokumen tidak ditemukan.");
+
+    const absolutePath = path.resolve(STORAGE_ROOT, doc.folder_name, doc.stored_filename);
+    const relative = path.relative(STORAGE_ROOT, absolutePath);
+    if (!relative || relative.startsWith("..") || path.isAbsolute(relative)) {
+      return res.status(403).send("Akses file ditolak.");
+    }
+
+    await fs.access(absolutePath);
+    const ext = path.extname(doc.original_filename).toLowerCase();
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Content-Type", doc.mime_type || "application/octet-stream");
+    const disposition = ext === ".pdf" ? "inline" : "attachment";
+    res.setHeader("Content-Disposition", `${disposition}; filename*=UTF-8''${encodeURIComponent(doc.original_filename)}`);
+    return res.sendFile(absolutePath);
+  } catch (err) {
+    if (err.code === "ENOENT") return res.status(404).send("File fisik tidak ditemukan.");
+    console.error("GET /view_file error:", err);
+    res.status(500).send("Gagal membuka dokumen.");
+  }
+});
+
+router.get("/update_data", checkAuth, async (req, res) => {
+  try {
+    const id = Number(req.query.id);
+    if (!Number.isInteger(id) || id <= 0) return res.status(400).send("ID integrasi tidak valid.");
+
+    const integration = await getIntegration(id);
+    if (!integration) return res.status(404).send("Data integrasi tidak ditemukan.");
+
+    const docs = await db.query(
+      `SELECT id, document_name, original_filename, mime_type, file_size, created_at
+       FROM uploaded_documents
+       WHERE upload_document_id = $1
+       ORDER BY id ASC`,
+      [id]
+    );
+
+    res.render("update_data.ejs", {
+      integration,
+      documents: docs.rows,
+      maxMB: MAX_MB,
+      maxFiles: MAX_FILES,
+      maxTotalMB: MAX_TOTAL_MB,
+      message: req.flash("success")[0] || "",
+      errorMessage: req.flash("error")[0] || ""
+    });
+  } catch (err) {
+    console.error("GET /update_data error:", err);
+    res.status(500).send("Gagal membuka halaman edit.");
+  }
+});
+
+router.post(
+  "/update_data",
+  checkAuth,
+  upload.fields([
+    { name: "newDocuments", maxCount: MAX_FILES },
+    { name: "replacementFiles", maxCount: MAX_FILES }
+  ]),
+  async (req, res) => {
+    const id = Number(req.query.id);
+    const redirectUrl = `/update_data?id=${encodeURIComponent(id)}`;
+    let client;
+    let folderPath;
+    const filesWritten = [];
+    const filesToDelete = [];
+
+    try {
+      if (!Number.isInteger(id) || id <= 0) return res.status(400).send("ID integrasi tidak valid.");
+
+      const integration = await getIntegration(id);
+      if (!integration) return res.status(404).send("Data integrasi tidak ditemukan.");
+
+      const newFiles = req.files?.newDocuments || [];
+      const replacementFiles = req.files?.replacementFiles || [];
+      const totalFiles = [...newFiles, ...replacementFiles];
+      if (totalFiles.length > MAX_FILES) throw new Error(`Maksimal ${MAX_FILES} file dalam satu kali penyimpanan.`);
+      if (totalFiles.reduce((sum, f) => sum + f.size, 0) > MAX_TOTAL_SIZE) {
+        throw new Error(`Total ukuran file maksimal ${MAX_TOTAL_MB} MB.`);
+      }
+
+      const institution = text(req.body.institutionName, 256);
+      const apiName = text(req.body.integrationType, 128);
+      const vaType = text(req.body.vaType, 64) || null;
+      if (!institution || !apiName) throw new Error("Nama mitra dan API Name wajib diisi.");
+
+      const deleteIds = ensureArray(req.body.deleteDocumentIds)
+        .map(Number).filter(n => Number.isInteger(n) && n > 0);
+      const replacementIds = ensureArray(req.body.replacementDocumentIds).map(String);
+      const newNames = ensureArray(req.body.newDocumentNames);
+
+      if (replacementIds.length !== replacementFiles.length) {
+        throw new Error("Data file pengganti tidak cocok. Silakan pilih ulang file pengganti.");
+      }
+      if (newNames.length !== newFiles.length) {
+        throw new Error("Data nama dokumen baru tidak cocok dengan jumlah file.");
+      }
+
+      folderPath = path.join(STORAGE_ROOT, integration.folder_name);
+      await fs.mkdir(folderPath, { recursive: true });
+
+      client = await db.connect();
+      await client.query("BEGIN");
+
+      await client.query(
+        `UPDATE upload_document
+         SET name = $1, api_name = $2, va_type = $3, updated_at = CURRENT_TIMESTAMP
+         WHERE id = $4`,
+        [institution, apiName, vaType, id]
+      );
+
+      if (deleteIds.length) {
+        const deleted = await client.query(
+          `DELETE FROM uploaded_documents
+           WHERE upload_document_id = $1 AND id = ANY($2::bigint[])
+           RETURNING stored_filename`,
+          [id, deleteIds]
+        );
+        filesToDelete.push(...deleted.rows.map(row => row.stored_filename));
+      }
+
+      for (let i = 0; i < replacementFiles.length; i++) {
+        const docId = Number(replacementIds[i]);
+        if (!Number.isInteger(docId) || docId <= 0) throw new Error("ID dokumen pengganti tidak valid.");
+
+        const old = await client.query(
+          `SELECT stored_filename FROM uploaded_documents
+           WHERE id = $1 AND upload_document_id = $2 FOR UPDATE`,
+          [docId, id]
+        );
+        if (!old.rows[0]) throw new Error("Dokumen yang akan diganti tidak ditemukan.");
+
+        const metadata = await writeUploadedFile(replacementFiles[i], folderPath);
+        filesWritten.push(metadata.stored_filename);
+        await client.query(
+          `UPDATE uploaded_documents
+           SET original_filename = $1, stored_filename = $2,
+               mime_type = $3, file_size = $4, created_at = CURRENT_TIMESTAMP
+           WHERE id = $5 AND upload_document_id = $6`,
+          [metadata.original_filename, metadata.stored_filename, metadata.mime_type, metadata.file_size, docId, id]
+        );
+        filesToDelete.push(old.rows[0].stored_filename);
+      }
+
+      for (let i = 0; i < newFiles.length; i++) {
+        const metadata = await writeUploadedFile(newFiles[i], folderPath);
+        filesWritten.push(metadata.stored_filename);
+        await insertDocument(client, id, metadata, newNames[i]);
+      }
+
+      await client.query("COMMIT");
+
+      for (const filename of filesToDelete) {
+        await fs.unlink(path.join(folderPath, filename)).catch(err => {
+          if (err.code !== "ENOENT") console.error("Gagal membersihkan file lama:", err);
+        });
+      }
+
+      req.flash("success", "Perubahan dokumen berhasil disimpan.");
+      return res.redirect(`/read_data?id=${id}`);
+    } catch (err) {
+      if (client) await client.query("ROLLBACK").catch(() => {});
+      if (folderPath) {
+        for (const filename of filesWritten) {
+          await fs.unlink(path.join(folderPath, filename)).catch(() => {});
+        }
+      }
+      console.error("POST /update_data error:", err);
+      return flashError(req, res, err.message || "Gagal memperbarui dokumen.", redirectUrl);
+    } finally {
+      client?.release();
+    }
+  }
+);
+
+router.get("/delete_file", checkAuth, async (req, res) => {
+  try {
+    const id = Number(req.query.id);
+    const docId = Number(req.query.documentId);
+    if (!Number.isInteger(id) || !Number.isInteger(docId)) return res.status(400).send("Parameter tidak valid.");
+
+    const client = await db.connect();
+    try {
+      await client.query("BEGIN");
+      const result = await client.query(
+        `DELETE FROM uploaded_documents
+         WHERE id = $1 AND upload_document_id = $2
+         RETURNING stored_filename`,
+        [docId, id]
+      );
+      if (!result.rows[0]) {
+        await client.query("ROLLBACK");
+        return res.status(404).send("Dokumen tidak ditemukan.");
+      }
+      await client.query("UPDATE upload_document SET updated_at = CURRENT_TIMESTAMP WHERE id = $1", [id]);
+      await client.query("COMMIT");
+
+      const integration = await getIntegration(id);
+      if (integration) {
+        await fs.unlink(path.join(STORAGE_ROOT, integration.folder_name, result.rows[0].stored_filename)).catch(err => {
+          if (err.code !== "ENOENT") console.error(err);
+        });
+      }
+      req.flash("success", "Dokumen berhasil dihapus.");
+      return res.redirect(`/read_data?id=${id}`);
+    } catch (err) {
+      await client.query("ROLLBACK").catch(() => {});
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error("GET /delete_file error:", err);
+    res.status(500).send("Gagal menghapus dokumen.");
+  }
+});
+
+router.get("/delete", checkAuth, async (req, res) => {
+  try {
+    const id = Number(req.query.id);
+    if (!Number.isInteger(id) || id <= 0) return res.status(400).send("ID tidak valid.");
+    const integration = await getIntegration(id);
+    if (!integration) return res.status(404).send("Data integrasi tidak ditemukan.");
+
+    await db.query("DELETE FROM upload_document WHERE id = $1", [id]);
+    await fs.rm(path.join(STORAGE_ROOT, integration.folder_name), { recursive: true, force: true });
+    req.flash("success", "Data integrasi dan seluruh dokumennya berhasil dihapus.");
+    return res.redirect("/");
+  } catch (err) {
+    console.error("GET /delete error:", err);
+    res.status(500).send("Gagal menghapus data integrasi.");
+  }
+});
+
+router.get("/login", isAlreadyLoggedIn, (req, res) => {
+  res.render("login.ejs", { errorMessage: req.flash("error")[0] || "" });
+});
+
+router.post("/login", async (req, res) => {
+  try {
+    const username = text(req.body.username, 150);
+    const password = typeof req.body.password === "string" ? req.body.password : "";
+    const result = await db.query(
+      "SELECT id, username, password FROM users WHERE username = $1",
+      [username]
+    );
+    const user = result.rows[0];
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      req.flash("error", "Username atau password salah.");
+      return res.redirect("/login");
+    }
+    req.session.userId = user.id;
+    req.session.username = user.username;
+    return res.redirect("/");
+  } catch (err) {
+    console.error("POST /login error:", err);
+    res.status(500).send("Terjadi kesalahan saat login.");
+  }
+});
+
+router.get("/logout", (req, res) => {
+  req.session.destroy(err => {
+    if (err) return res.status(500).send("Gagal logout.");
     res.clearCookie("connect.sid");
     res.redirect("/login");
   });
 });
-
-
-
-
-
-
 
 export default router;

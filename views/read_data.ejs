@@ -1,297 +1,92 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
-    <link rel="stylesheet" href="/style/style.css">
-</head>
-<body>
-    <div class="app-layout">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Detail Integrasi</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
+    />
+  </head>
+  <body class="bg-light">
+    <div class="d-flex" style="min-height: 100vh">
+      <%- include('./partials/sidebar.ejs') %>
+      <main class="flex-fill p-4">
+        <div class="container-fluid" style="max-width: 1100px">
+          <a href="/" class="font-weight-bold">‹ Back</a>
 
-        <%- include('./partials/sidebar.ejs') %>
+          <div
+            class="d-flex justify-content-between align-items-center mt-3 mb-3"
+          >
+            <h3 class="text-primary font-weight-bold mb-0">Detail Integrasi</h3>
+            <a
+              class="btn btn-primary"
+              href="/update_data?id=<%= integration.id %>"
+              >Edit</a
+            >
+          </div>
 
-        <main class="app-content">
-            <div class="container-fluid px-0">
-                <div class="d-flex justify-content-between mb-4">
-                    <a href="/" class="text-primary font-weight-bold d-flex align-items-center" style="font-size: large;">
-                        <span class="mr-1">❮</span> Back
-                    </a>
-                    <a href="/update_data?id=<%= id %>" class="btn btn-primary font-weight-bold text-center ml-auto">
-                        Edit
-                    </a>
+          <% if(message){ %>
+            <div class="alert alert-success"><%= message %></div>
+          <% } %>
+          <% if(errorMessage){ %>
+            <div class="alert alert-danger"><%= errorMessage %></div>
+          <% } %>
+
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-4">
+                  <small class="text-muted">Mitra / Institusi</small>
+                  <div class="font-weight-bold"><%= integration.name %></div>
                 </div>
-
-                <div class="card border-1 p-4 shadow-sm w-100" style="border-radius: 8px;">
-                    <h3 class="text-primary text-uppercase font-weight-bold mt-3 text-left">READ - <%= institution %></h3>
-                    <p class="mb-1">Integrasi dengan Mitra <%= institution %> menggunakan API <%= integration %> <%= vaType %>, data dibuat pada <%= create_date %></p>
-                    
-                    <% if (message) { %>
-                        <div class="alert alert-success alert-dismissible fade show w-100 text-center mb-4 shadow-sm" style="max-width: 1000px;" role="alert">
-                            <strong><%= message %></strong>
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Close" style="outline: none; padding-bottom: 5px;">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                    <% } %>
-
-                    <div id="clientErrorBox" class="alert alert-danger alert-dismissible fade show w-100 text-center mb-4 shadow-sm <%= errorMessage ? '' : 'd-none' %>" style="max-width: 1000px;" role="alert">
-                        <strong id="errorMessageText"><%= errorMessage || "" %></strong>
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close" style="outline: none; padding-bottom: 5px;">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                    <hr class="mb-4">
-
-                    <div class="mb-3">
-                        <label>Name of institution <span class="font-weight-bold text-danger">*</span></label>
-                        <input type="text" class="form-control" id="projectName" name="institutionName" placeholder="Integration with.." value="<%= institution %>" disabled>
-                    </div>
-
-                    <div class="mb-4">
-                        <label>API Name <span class="font-weight-bold text-danger">*</span></label>
-                        <input type="text" name="integrationType" id="integrationType" class="form-control text-secondary" value="<%= integration %>" disabled>
-                    </div>  
-
-                    <% if (integration === "Virtual Account SNAP") { %>
-                        <div class="mb-4" id="vaTypeContainer">
-                            <label>Virtual Account type<span class="font-weight-bold text-danger">*</span></label>
-                            <input type="text" name="vaType" id="vaType" class="form-control text-secondary" value="<%= vaType %>" disabled >
-                        </div>
-                    <% } %>
-
-                    <h6 class="text-uppercase font-weight-bold text-primary mb-1 mt-5">
-                        📋 Dokumen Integrasi
-                    </h6>
-                    <hr class="mb-3">
-
-                    <%- include('./partials/readDocumentFields.ejs', {
-                        documents: documentForm.integration,
-                        fields: fields
-                    }) %>
-
-                    <div class="mt-5">
-                        <h6 class="text-uppercase font-weight-bold text-primary mb-1">
-                            📁 Dokumen Verifikasi ASPI
-                        </h6>
-                        <hr class="mb-3">
-                        <%- include('./partials/readDocumentFields.ejs', {
-                            documents: documentForm.aspi,
-                            fields: fields
-                        }) %>
-                    </div>
-                    
-                    <div class="mt-4" id="openButton">
-
-                        <h6 class="text-uppercase font-weight-bold text-primary mb-1">
-                            📋 Hasil Uji Developer Site - <%= integration %>
-                        </h6>
-
-                        <hr class="mb-3">
-
-                        <% const selectedApiDocuments = (documentForm.apiDocuments || []).filter(
-                            api => api.name === integration
-                        ); %>
-
-                        <% if (selectedApiDocuments.length > 0) { %>
-
-                            <% selectedApiDocuments.forEach(api => { %>
-
-                                <%- include('./partials/readDocumentFields.ejs', {
-                                    documents: api.fields,
-                                    fields: fields
-                                }) %>
-
-                            <% }) %>
-
-                        <% } else { %>
-
-                            <div class="alert alert-warning">
-                                Konfigurasi dokumen Developer Site untuk API ini tidak ditemukan.
-                            </div>
-
-                        <% } %>
-
-                        <h6 class="text-uppercase font-weight-bold text-primary mb-1 mt-5">
-                            🗃️ Hasil Uji Fungsionalitas
-                        </h6>
-
-                        <hr class="mb-3">
-
-                        <%- include('./partials/readDocumentFields.ejs', {
-                            documents: documentForm.functionality,
-                            fields: fields
-                        }) %>
-
-                    </div>
+                <div class="col-md-4">
+                  <small class="text-muted">API Name</small>
+                  <div class="font-weight-bold">
+                    <%= integration.api_name %>
+                  </div>
                 </div>
+                <div class="col-md-4">
+                  <small class="text-muted">VA Type</small>
+                  <div class="font-weight-bold">
+                    <%= integration.va_type || '-' %>
+                  </div>
+                </div>
+              </div>
             </div>
-        </main>
-    </div>
+          </div>
 
-
-    <div class="modal fade" id="modalDeleteConfirmation" tabindex="-1" role="dialog" aria-labelledby="labelDeleteConfirmation" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="labelDeleteConfirmation">Confirm to delete this document</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
+          <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white font-weight-bold">
+              Dokumen Terunggah (<%= documents.length %>)
             </div>
+            <div class="card-body">
+              <% if(!documents.length){ %>
+                <div class="text-muted text-center py-4">Belum ada dokumen.</div>
+              <% } %>
+              <% documents.forEach(doc => { %>
+                <div
+                  class="d-flex flex-wrap justify-content-between align-items-center border-bottom py-3"
+                >
+                  <div class="pr-3">
+                    <div class="font-weight-bold"><%= doc.document_name %></div>
+                    <small class="text-muted">
+                      <%= doc.original_filename %> ·
+                      <%= (Number(doc.file_size) / 1024 / 1024).toFixed(2) %> MB
+                    </small>
+                  </div>
+                  <a
+                    class="btn btn-sm btn-outline-primary"
+                    href="/view_file?documentId=<%= doc.id %>"
+                    >Lihat / Unduh</a
+                  >
+                </div>
+              <% }) %>
+            </div>
+          </div>
         </div>
+      </main>
     </div>
-
-    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const form = document.querySelector('form[action^="/update_data"]');
-            const errorBox = document.getElementById('clientErrorBox');
-            const errorText = document.getElementById('errorMessageText');
-
-            const MAX_MB = Number("<%= maxMB %>");
-            const MAX_FILE_SIZE = Number("<%= maxFileSize %>");
-            const ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'xls', 'xlsx'];
-            const fileInputs = Array.from(document.querySelectorAll('.custom-file-input'));
-
-            const originalLabels = new Map(
-                fileInputs.map((input) => [input, document.getElementById(`label_${input.id}`)?.textContent.trim() || 'Choose file'])
-            );
-
-            function toggleError(msg = '') {
-                errorText.textContent = msg;
-                errorBox.classList.toggle('d-none', !msg);
-                errorBox.classList.toggle('show', !!msg);
-                if (msg) window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-            window.hideErrorMessage = () => toggleError();
-
-            function validateFile(file) {
-                const ext = file.name.includes('.') ? file.name.split('.').pop().toLowerCase() : '';
-                if (!ALLOWED_EXTENSIONS.includes(ext)) return 'Format file tidak didukung! Gunakan PDF, DOC, DOCX, XLS, atau XLSX.';
-                if (file.size > MAX_FILE_SIZE) return `Ukuran file terlalu besar! Ukuran maksimal adalah ${MAX_MB} MB.`;
-                return null;
-            }
-
-            function handleFileUI(input, fileName = '') {
-                const label = document.getElementById(`label_${input.id}`);
-                if (!label) return;
-
-                if (fileName) {
-                label.textContent = fileName;
-                label.classList.add('selected', 'text-success');
-                label.classList.remove('text-muted');
-                } else {
-                input.value = '';
-                const originalText = originalLabels.get(input);
-                label.textContent = originalText;
-                label.classList.remove('selected', 'text-success');
-                if (originalText === 'Choose file') label.classList.add('text-muted');
-                }
-            }
-
-            function validateAllFiles() {
-                for (const input of fileInputs) {
-                if (input.files?.[0]) {
-                    const error = validateFile(input.files[0]);
-                    if (error) {
-                    handleFileUI(input);
-                    toggleError(error);
-                    return false;
-                    }
-                }
-                }
-                return true;
-            }
-
-            fileInputs.forEach((input) => {
-                const processInput = (file) => {
-                const error = validateFile(file);
-                if (error) {
-                    handleFileUI(input);
-                    return toggleError(error);
-                }
-                handleFileUI(input, file.name);
-                if (validateAllFiles()) toggleError();
-                };
-
-                input.addEventListener('change', () => input.files?.[0] && processInput(input.files[0]));
-
-                const dropArea = input.closest('.custom-file');
-                if (!dropArea) return;
-
-                ['dragenter', 'dragover', 'dragleave', 'dragend'].forEach((evt) => {
-                dropArea.addEventListener(evt, (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    dropArea.classList.toggle('drag-over', ['dragenter', 'dragover'].includes(evt));
-                });
-                });
-
-                dropArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                dropArea.classList.remove('drag-over');
-
-                const file = e.dataTransfer.files?.[0];
-                if (!file) return;
-
-                const error = validateFile(file);
-                if (error) {
-                    handleFileUI(input);
-                    return toggleError(error);
-                }
-
-                try {
-                    const transfer = new DataTransfer();
-                    transfer.items.add(file);
-                    input.files = transfer.files;
-                    processInput(file);
-                } catch (err) {
-                    toggleError('Browser tidak mendukung drag and drop. Silakan pilih file melalui tombol.');
-                }
-                });
-            });
-
-            document.addEventListener('dragover', (e) => e.preventDefault());
-            document.addEventListener('drop', (e) => !e.target.closest('.custom-file') && e.preventDefault());
-
-            // 3. Validasi Form Submit
-            if (form) {
-                form.addEventListener('submit', (e) => {
-                const hasFiles = fileInputs.some((i) => i.files?.length > 0);
-                if (!hasFiles) {
-                    e.preventDefault();
-                    return toggleError('Anda belum memilih dokumen baru untuk diperbarui!');
-                }
-                if (!validateAllFiles()) e.preventDefault();
-                });
-            }
-        });
-
-        $(document).ready(function () {
-            $("#modalDeleteConfirmation").on("show.bs.modal", function (event) {
-                const button = event.relatedTarget;
-                const id = button.getAttribute("data-id");
-                const fileName = button.getAttribute("data-filename");
-
-                const modal = this;
-
-                modal.querySelector("#nama-berkas-modal").textContent = fileName;
-
-                const deleteUrl = `/delete_file?id=${encodeURIComponent(id)}&fileName=${encodeURIComponent(fileName)}`;
-
-                modal.querySelector("#btn-delete-confirmation").setAttribute("href",deleteUrl);
-            });
-        });
-
-        $('.form-group input').prop('disabled', true);
-
-        $('.form-group .custom-file-input').prop('disabled', true);
-    </script>
-
-    </body>
+  </body>
 </html>
