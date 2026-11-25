@@ -8,34 +8,85 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
 
     <style>
-        .dropzone {
-            border: 2px dashed #9bb8df;
-            border-radius: 10px;
-            background: #f7faff;
-            padding: 25px;
-            text-align: center;
-            cursor: pointer;
+        .upload-page {
+            min-height: 100vh;
         }
 
+        .upload-container {
+            max-width: 1050px;
+            width: 100%;
+        }
+
+        .dropzone {
+            border: 2px dashed #9bb8df;
+            border-radius: 12px;
+            background: #f7faff;
+            padding: 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color .2s ease, border-color .2s ease;
+        }
+
+        .dropzone:hover,
         .dropzone.drag {
             background: #eaf2ff;
+            border-color: #2563eb;
+        }
+
+        .dropzone:focus {
+            outline: 3px solid rgba(37, 99, 235, .2);
+            outline-offset: 2px;
         }
 
         .doc-row {
             border: 1px solid #e2e8f0;
             border-radius: 9px;
-            padding: 12px;
+            padding: 14px;
             margin-bottom: 10px;
+            background: #fff;
+        }
+
+        .upload-container {
+            max-width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            .upload-page main {
+                padding: 16px !important;
+            }
+
+            .upload-container {
+                padding-left: 0;
+                padding-right: 0;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .upload-card-body {
+                padding: 16px !important;
+            }
+
+            .dropzone {
+                padding: 24px 14px;
+            }
+
+            .doc-row {
+                padding: 12px;
+            }
+
+            .upload-actions {
+                flex-wrap: wrap;
+            }
         }
     </style>
 </head>
 
 <body class="bg-light">
-<div class="d-flex" style="min-height: 100vh">
+<div class="d-flex upload-page">
     <%- include('./partials/sidebar.ejs') %>
 
-    <main class="flex-fill p-4">
-        <div class="container-fluid" style="max-width: 1100px">
+    <main class="flex-fill p-4 w-100">
+        <div class="container-fluid upload-container">
 
             <a href="/read_data?id=<%= integration.id %>" class="font-weight-bold">
                 ‹ Kembali
@@ -45,11 +96,11 @@
                 Edit Integrasi
             </h3>
 
-            <% if (message) { %>
+            <% if (typeof message !== "undefined" && message) { %>
                 <div class="alert alert-success"><%= message %></div>
             <% } %>
 
-            <% if (errorMessage) { %>
+            <% if (typeof errorMessage !== "undefined" && errorMessage) { %>
                 <div class="alert alert-danger"><%= errorMessage %></div>
             <% } %>
 
@@ -61,7 +112,7 @@
 
                 <!-- INFORMASI INTEGRASI -->
                 <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-body">
+                    <div class="card-body p-4 upload-card-body">
                         <div class="form-row">
 
                             <div class="form-group col-md-4">
@@ -99,14 +150,14 @@
 
                 <!-- DOKUMEN LAMA -->
                 <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-white font-weight-bold">
+                    <div class="card-header bg-white font-weight-bold pt-4 px-4 border-0 pb-0">
                         Dokumen Saat Ini
                     </div>
 
-                    <div class="card-body">
+                    <div class="card-body p-4 upload-card-body">
 
                         <% if (!documents.length) { %>
-                            <p class="text-muted">Belum ada dokumen.</p>
+                            <p class="text-muted text-center py-4">Belum ada dokumen.</p>
                         <% } %>
 
                         <% documents.forEach(doc => { %>
@@ -118,7 +169,7 @@
                                             <%= doc.document_name %>
                                         </div>
 
-                                        <div class="small text-muted">
+                                        <div class="small text-muted mb-1">
                                             <%= doc.original_filename %>
                                             ·
                                             <%= (Number(doc.file_size) / 1024 / 1024).toFixed(2) %>
@@ -126,14 +177,14 @@
                                         </div>
 
                                         <a
-                                            class="small"
+                                            class="small font-weight-bold"
                                             href="/view_file?documentId=<%= doc.id %>"
                                             target="_blank">
                                             Lihat dokumen
                                         </a>
 
-                                        <div class="mt-2">
-                                            <label class="small mb-1">
+                                        <div class="mt-3">
+                                            <label class="small font-weight-bold mb-1">
                                                 Ganti file (opsional)
                                             </label>
 
@@ -152,12 +203,12 @@
                                         </div>
                                     </div>
 
-                                    <label class="text-danger small">
+                                    <label class="text-danger small mb-0 font-weight-bold d-flex align-items-center">
                                         <input
                                             type="checkbox"
                                             name="deleteDocumentIds"
                                             value="<%= doc.id %>"
-                                            class="delete-doc">
+                                            class="delete-doc mr-1">
                                         Hapus
                                     </label>
 
@@ -170,17 +221,20 @@
 
                 <!-- TAMBAH DOKUMEN BARU -->
                 <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white font-weight-bold">
+                    <div class="card-header bg-white font-weight-bold pt-4 px-4 border-0 pb-0">
                         Tambah Dokumen Baru
                     </div>
 
-                    <div class="card-body">
-                        <div class="dropzone" id="dropzone">
-                            <strong>
-                                Tarik file ke sini atau klik untuk memilih
-                            </strong>
+                    <div class="card-body p-4 upload-card-body">
+                        <div class="dropzone" id="dropzone" role="button" tabindex="0">
+                            <div class="h4 mb-2">☁</div>
+                            <strong>Tarik file ke sini atau klik untuk memilih</strong>
 
-                            <div class="small text-muted mt-1">
+                            <div class="small text-muted my-2">
+                                Formats: PDF, DOC, DOCX, XLS, XLSX.
+                            </div>
+
+                            <div class="small text-muted">
                                 Maks. <%= maxMB %> MB/file,
                                 <%= maxTotalMB %> MB total,
                                 <%= maxFiles %> file.
@@ -194,253 +248,246 @@
                                 hidden>
                         </div>
 
-                        <div id="newList" class="mt-3"></div>
+                        <div id="newList" class="mt-4"></div>
                     </div>
                 </div>
 
                 <!-- BUTTON -->
-                <div class="d-flex justify-content-end mt-4">
+                <div class="d-flex justify-content-end mt-4 upload-actions">
                     <a
                         href="/read_data?id=<%= integration.id %>"
                         class="btn btn-light mr-2">
                         Batal
                     </a>
-
-                    <button
-                        type="submit"
-                        class="btn btn-primary"
-                        id="saveBtn">
-                        Simpan Perubahan
-                    </button>
+                    <button type="submit" class="btn btn-primary">Simpan</button>
                 </div>
-
             </form>
         </div>
     </main>
 </div>
 
-<script>
-(() => {
-    const form = document.getElementById('editForm');
-    const input = document.getElementById('newInput');
-    const drop = document.getElementById('dropzone');
-    const list = document.getElementById('newList');
-    const save = document.getElementById('saveBtn');
+    <script>
+        (() => {
+            const form = document.getElementById('editForm');
+            const input = document.getElementById('newInput');
+            const drop = document.getElementById('dropzone');
+            const list = document.getElementById('newList');
+            const save = document.getElementById('saveBtn');
 
-    const maxFile = <%= maxMB * 1024 * 1024 %>;
-    const maxTotal = <%= maxTotalMB * 1024 * 1024 %>;
-    const maxFiles = <%= maxFiles %>;
+            const maxFile = <%= maxMB * 1024 * 1024 %>;
+            const maxTotal = <%= maxTotalMB * 1024 * 1024 %>;
+            const maxFiles = <%= maxFiles %>;
 
-    const allowed = ['pdf', 'doc', 'docx', 'xls', 'xlsx'];
-    let added = [];
+            const allowed = ['pdf', 'doc', 'docx', 'xls', 'xlsx'];
+            let added = [];
 
-    const fmt = n => (n / 1024 / 1024).toFixed(2) + ' MB';
+            const fmt = n => (n / 1024 / 1024).toFixed(2) + ' MB';
 
-    function nameOf(file) {
-        return file.name
-            .replace(/\.[^.]+$/, '')
-            .replace(/[_-]+/g, ' ')
-            .trim();
-    }
-
-    function render() {
-        list.innerHTML = '';
-
-        added.forEach((item, index) => {
-            const row = document.createElement('div');
-            row.className = 'doc-row';
-
-            row.innerHTML =
-                '<label class="small font-weight-bold">Nama dokumen</label>' +
-                '<div class="d-flex">' +
-                '<input class="form-control form-control-sm mr-2" maxlength="255">' +
-                '<button type="button" class="btn btn-sm btn-outline-danger">Hapus</button>' +
-                '</div>' +
-                '<div class="small text-muted mt-1"></div>';
-
-            const nameInput = row.querySelector('input');
-
-            nameInput.value = item.name;
-
-            nameInput.addEventListener('input', event => {
-                item.name = event.target.value;
-            });
-
-            row.querySelector('.small.text-muted').textContent =
-                item.file.name + ' · ' + fmt(item.file.size);
-
-            row.querySelector('button').addEventListener('click', () => {
-                added.splice(index, 1);
-                render();
-            });
-
-            list.appendChild(row);
-        });
-    }
-
-    function addFiles(files) {
-        for (const file of Array.from(files || [])) {
-            const ext = file.name.split('.').pop().toLowerCase();
-
-            if (!allowed.includes(ext)) {
-                alert('Format file tidak didukung: ' + file.name);
-                continue;
+            function nameOf(file) {
+                return file.name
+                    .replace(/\.[^.]+$/, '')
+                    .replace(/[_-]+/g, ' ')
+                    .trim();
             }
 
-            if (file.size > maxFile) {
-                alert('Ukuran file terlalu besar: ' + file.name);
-                continue;
-            }
+            function render() {
+                list.innerHTML = '';
 
-            if (added.length >= maxFiles) {
-                alert('Maksimal ' + maxFiles + ' file.');
-                break;
-            }
+                added.forEach((item, index) => {
+                    const row = document.createElement('div');
+                    row.className = 'doc-row';
 
-            const currentTotal = added.reduce(
-                (sum, item) => sum + item.file.size,
-                0
-            );
+                    row.innerHTML =
+                        '<label class="small font-weight-bold">Nama dokumen</label>' +
+                        '<div class="d-flex">' +
+                        '<input class="form-control form-control-sm mr-2" maxlength="255">' +
+                        '<button type="button" class="btn btn-sm btn-outline-danger">Hapus</button>' +
+                        '</div>' +
+                        '<div class="small text-muted mt-1"></div>';
 
-            if (currentTotal + file.size > maxTotal) {
-                alert('Total ukuran file melebihi batas.');
-                break;
-            }
+                    const nameInput = row.querySelector('input');
 
-            added.push({
-                file,
-                name: nameOf(file)
-            });
-        }
+                    nameInput.value = item.name;
 
-        input.value = '';
-        render();
-    }
+                    nameInput.addEventListener('input', event => {
+                        item.name = event.target.value;
+                    });
 
-    // PILIH FILE
-    drop.addEventListener('click', () => input.click());
+                    row.querySelector('.small.text-muted').textContent =
+                        item.file.name + ' · ' + fmt(item.file.size);
 
-    input.addEventListener('change', () => {
-        addFiles(input.files);
-    });
+                    row.querySelector('button').addEventListener('click', () => {
+                        added.splice(index, 1);
+                        render();
+                    });
 
-    // DRAG AND DROP
-    ['dragover', 'dragenter'].forEach(eventName => {
-        drop.addEventListener(eventName, event => {
-            event.preventDefault();
-            drop.classList.add('drag');
-        });
-    });
-
-    ['dragleave', 'drop'].forEach(eventName => {
-        drop.addEventListener(eventName, event => {
-            event.preventDefault();
-            drop.classList.remove('drag');
-        });
-    });
-
-    drop.addEventListener('drop', event => {
-        addFiles(event.dataTransfer.files);
-    });
-
-    // FILE PENGGANTI
-    document.querySelectorAll('.replacement-file').forEach(inputFile => {
-        const hidden = inputFile.parentElement.querySelector(
-            'input[type="hidden"]'
-        );
-
-        inputFile.addEventListener('change', () => {
-            hidden.disabled = !inputFile.files.length;
-        });
-    });
-
-    // SUBMIT FORM
-    form.addEventListener('submit', event => {
-        const replacements = Array.from(
-            document.querySelectorAll('.replacement-file')
-        ).filter(inputFile => inputFile.files.length);
-
-        const deletes = Array.from(
-            document.querySelectorAll('.delete-doc:checked')
-        ).map(checkbox => checkbox.value);
-
-        // Tidak boleh menghapus dan mengganti dokumen yang sama
-        if (replacements.some(file => deletes.includes(file.dataset.id))) {
-            event.preventDefault();
-            alert('Dokumen yang sama tidak bisa dihapus dan diganti sekaligus.');
-            return;
-        }
-
-        // Validasi jumlah file
-        if (replacements.length + added.length > maxFiles) {
-            event.preventDefault();
-            alert('Maksimal ' + maxFiles + ' file perubahan per proses.');
-            return;
-        }
-
-        // Validasi nama dokumen
-        if (added.some(item => !item.name.trim())) {
-            event.preventDefault();
-            alert('Nama dokumen baru tidak boleh kosong.');
-            return;
-        }
-
-        // Validasi ukuran keseluruhan
-        const total =
-            added.reduce((sum, item) => sum + item.file.size, 0) +
-            replacements.reduce(
-                (sum, file) => sum + file.files[0].size,
-                0
-            );
-
-        if (
-            total > maxTotal ||
-            replacements.some(file => file.files[0].size > maxFile)
-        ) {
-            event.preventDefault();
-            alert('Batas ukuran file terlampaui.');
-            return;
-        }
-
-        // Siapkan data form
-        const data = new FormData(form);
-
-        data.delete('newDocuments');
-        data.delete('newDocumentNames');
-
-        added.forEach(item => {
-            data.append('newDocuments', item.file, item.file.name);
-            data.append('newDocumentNames', item.name);
-        });
-
-        event.preventDefault();
-
-        save.disabled = true;
-        save.textContent = 'Menyimpan...';
-
-        fetch(form.action, {
-            method: 'POST',
-            body: data,
-            redirect: 'follow'
-        })
-        .then(response => {
-            if (response.redirected) {
-                window.location.href = response.url;
-            } else {
-                return response.text().then(message => {
-                    throw new Error(message || 'Gagal menyimpan perubahan.');
+                    list.appendChild(row);
                 });
             }
-        })
-        .catch(error => {
-            alert(error.message);
 
-            save.disabled = false;
-            save.textContent = 'Simpan Perubahan';
-        });
-    });
-})();
-</script>
+            function addFiles(files) {
+                for (const file of Array.from(files || [])) {
+                    const ext = file.name.split('.').pop().toLowerCase();
+
+                    if (!allowed.includes(ext)) {
+                        alert('Format file tidak didukung: ' + file.name);
+                        continue;
+                    }
+
+                    if (file.size > maxFile) {
+                        alert('Ukuran file terlalu besar: ' + file.name);
+                        continue;
+                    }
+
+                    if (added.length >= maxFiles) {
+                        alert('Maksimal ' + maxFiles + ' file.');
+                        break;
+                    }
+
+                    const currentTotal = added.reduce(
+                        (sum, item) => sum + item.file.size,
+                        0
+                    );
+
+                    if (currentTotal + file.size > maxTotal) {
+                        alert('Total ukuran file melebihi batas.');
+                        break;
+                    }
+
+                    added.push({
+                        file,
+                        name: nameOf(file)
+                    });
+                }
+
+                input.value = '';
+                render();
+            }
+
+            // PILIH FILE
+            drop.addEventListener('click', () => input.click());
+
+            input.addEventListener('change', () => {
+                addFiles(input.files);
+            });
+
+            // DRAG AND DROP
+            ['dragover', 'dragenter'].forEach(eventName => {
+                drop.addEventListener(eventName, event => {
+                    event.preventDefault();
+                    drop.classList.add('drag');
+                });
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                drop.addEventListener(eventName, event => {
+                    event.preventDefault();
+                    drop.classList.remove('drag');
+                });
+            });
+
+            drop.addEventListener('drop', event => {
+                addFiles(event.dataTransfer.files);
+            });
+
+            // FILE PENGGANTI
+            document.querySelectorAll('.replacement-file').forEach(inputFile => {
+                const hidden = inputFile.parentElement.querySelector(
+                    'input[type="hidden"]'
+                );
+
+                inputFile.addEventListener('change', () => {
+                    hidden.disabled = !inputFile.files.length;
+                });
+            });
+
+            // SUBMIT FORM
+            form.addEventListener('submit', event => {
+                const replacements = Array.from(
+                    document.querySelectorAll('.replacement-file')
+                ).filter(inputFile => inputFile.files.length);
+
+                const deletes = Array.from(
+                    document.querySelectorAll('.delete-doc:checked')
+                ).map(checkbox => checkbox.value);
+
+                // Tidak boleh menghapus dan mengganti dokumen yang sama
+                if (replacements.some(file => deletes.includes(file.dataset.id))) {
+                    event.preventDefault();
+                    alert('Dokumen yang sama tidak bisa dihapus dan diganti sekaligus.');
+                    return;
+                }
+
+                // Validasi jumlah file
+                if (replacements.length + added.length > maxFiles) {
+                    event.preventDefault();
+                    alert('Maksimal ' + maxFiles + ' file perubahan per proses.');
+                    return;
+                }
+
+                // Validasi nama dokumen
+                if (added.some(item => !item.name.trim())) {
+                    event.preventDefault();
+                    alert('Nama dokumen baru tidak boleh kosong.');
+                    return;
+                }
+
+                // Validasi ukuran keseluruhan
+                const total =
+                    added.reduce((sum, item) => sum + item.file.size, 0) +
+                    replacements.reduce(
+                        (sum, file) => sum + file.files[0].size,
+                        0
+                    );
+
+                if (
+                    total > maxTotal ||
+                    replacements.some(file => file.files[0].size > maxFile)
+                ) {
+                    event.preventDefault();
+                    alert('Batas ukuran file terlampaui.');
+                    return;
+                }
+
+                // Siapkan data form
+                const data = new FormData(form);
+
+                data.delete('newDocuments');
+                data.delete('newDocumentNames');
+
+                added.forEach(item => {
+                    data.append('newDocuments', item.file, item.file.name);
+                    data.append('newDocumentNames', item.name);
+                });
+
+                event.preventDefault();
+
+                save.disabled = true;
+                save.textContent = 'Menyimpan...';
+
+                fetch(form.action, {
+                    method: 'POST',
+                    body: data,
+                    redirect: 'follow'
+                })
+                .then(response => {
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                    } else {
+                        return response.text().then(message => {
+                            throw new Error(message || 'Gagal menyimpan perubahan.');
+                        });
+                    }
+                })
+                .catch(error => {
+                    alert(error.message);
+
+                    save.disabled = false;
+                    save.textContent = 'Simpan Perubahan';
+                });
+            });
+        })();
+    </script>
 
 </body>
 </html>

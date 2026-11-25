@@ -30,14 +30,21 @@
     <div class="card shadow-sm form-login">
         <div class="card-body">
             <h3 class="card-title text-center mb-4">Login</h3>
+
+            <% if (errorMessage) { %>
+                <div class="alert alert-danger text-center small shadow-sm py-2" role="alert">
+                    <%= errorMessage %>
+                </div>
+            <% } %>
+            
             <form action="/login" method="POST">
                 <div class="form-group">
                     <label for="exampleFormControlInput">Username</label>
-                    <input type="text" name="username" class="form-control" id="exampleFormControlInput" placeholder="example" required>
+                    <input type="text" name="username" class="form-control" id="exampleFormControlInput" placeholder="you@example.com" required>
                 </div>
                 <div class="form-group">
                     <label for="exampleFormControlPassword">Password</label>
-                    <input type="password" name="password" class="form-control" id="exampleFormControlPassword" placeholder="example" required>
+                    <input type="password" name="password" class="form-control" id="exampleFormControlPassword" placeholder="Enter your password" required>
                 </div>
                 <button type="submit" class="btn btn-primary btn-block py-2">Sign In</button>
             </form>

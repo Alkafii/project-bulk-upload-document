@@ -1,232 +1,454 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="id">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Upload Dokumen</title>
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
-    />
-    <link rel="stylesheet" href="/style/style.css" />
-  </head>
-  <body class="bg-light">
-    <div class="d-flex" style="min-height: 100vh">
-      <%- include('./partials/sidebar.ejs') %>
-      <main class="flex-fill p-4">
-        <div class="container-fluid" style="max-width: 1050px">
-          <a href="/" class="font-weight-bold">‹ Back</a>
-          <h3 class="text-primary font-weight-bold mt-3 mb-4">
-            Upload Dokumen Integrasi
-          </h3>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Upload Document</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+  <link rel="stylesheet" href="/style/style.css?v=2" />
+  <style>
+    .upload-page {
+      min-height: 100vh;
+    }
 
-          <% if (typeof message !== 'undefined' && message) { %>
-            <div class="alert alert-success"><%= message %></div>
-          <% } %>
+    .upload-container {
+      max-width: 1050px;
+    }
 
-          <% if (typeof errorMessage !== 'undefined' && errorMessage) { %>
-            <div class="alert alert-danger"><%= errorMessage %></div>
-          <% } %>
+    .dropzone {
+      border: 2px dashed #9bb8df;
+      border-radius: 12px;
+      background: #f7faff;
+      padding: 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: background-color .2s ease, border-color .2s ease;
+    }
 
-          <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data" class="card shadow-sm border-0" >
-            <div class="card-body p-4">
-              
-              <div class="form-group">
-                <label>Partner Name <span class="text-danger">*</span></label>
-                <input class="form-control" name="institutionName" maxlength="256" placeholder="ex: Pemda Kota Bandung" required />
-              </div>
+    .dropzone:hover,
+    .dropzone.drag {
+      background: #eaf2ff;
+      border-color: #2563eb;
+    }
 
-              <div class="form-group">
-                <label>API Name <span class="text-danger">*</span></label>
-                <input class="form-control" name="integrationType" maxlength="128" placeholder="ex: Virtual Account SNAP" required />
-              </div>
+    .dropzone:focus {
+      outline: 3px solid rgba(37, 99, 235, .2);
+      outline-offset: 2px;
+    }
 
-              <hr />
+    .file-row {
+      border: 1px solid #e2e8f0;
+      border-radius: 9px;
+      padding: 14px;
+      margin-bottom: 10px;
+      background: #fff;
+    }
 
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <h5 class="font-weight-bold mb-0">Documents List</h5>
-                <span class="badge badge-primary" id="fileCount">0 file</span>
-              </div>
-              <p class="text-muted small">
-                Select or drag multiple files. Document names automatically match the filenames and can be edited before saving.
-              </p>
-              <div class="dropzone" id="dropzone">
-                <div class="h4 mb-2">☁</div>
-                <strong>Drag and drop files here</strong>
-                <div class="text-muted small my-2">
-                  or click to select multiple files
-                </div>
-                <span class="btn btn-outline-primary btn-sm">Select Documents</span>
-                <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.xls,.xlsx" multiple hidden/>
-              </div>
-              <div class="small text-muted mt-2">
-                Format: PDF, DOC, DOCX, XLS, XLSX. Max. <%= maxMB %> MB per file,
-                <%= maxTotalMB %> MB total, <%= maxFiles %> file per proses.
-              </div>
-              <div id="fileList" class="mt-4"></div>
-              <div class="d-flex justify-content-end mt-4">
-                <a href="/" class="btn btn-light mr-2">Batal</a>
-                <button type="submit" class="btn btn-primary" id="submitBtn" >
-                  Upload
-                </button>
-              </div>
+    .file-name {
+      font-size: 13px;
+      color: #64748b;
+      word-break: break-word;
+    }
+
+    #fileCount {
+      white-space: nowrap;
+    }
+
+    #submitBtn:disabled {
+      cursor: not-allowed;
+      opacity: .65;
+    }
+
+    .upload-container {
+      max-width: 100%;
+    }
+
+    @media (max-width: 768px) {
+      .upload-page main {
+        padding: 16px !important;
+      }
+
+      .upload-container {
+        padding-left: 0;
+        padding-right: 0;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .upload-card-body {
+        padding: 16px !important;
+      }
+
+      .dropzone {
+        padding: 24px 14px;
+      }
+
+      .file-row {
+        padding: 12px;
+      }
+
+      .file-row .d-flex {
+        gap: 10px;
+      }
+
+      .file-row .remove-file {
+        flex-shrink: 0;
+      }
+
+      .upload-actions {
+        flex-wrap: wrap;
+      }
+    }
+  </style>
+</head>
+
+<body class="bg-light">
+  <div class="d-flex upload-page">
+
+    <%- include('./partials/sidebar.ejs') %>
+
+    <main class="flex-fill p-4 w-100">
+      <div class="container-fluid upload-container">
+        <a href="/" class="font-weight-bold">‹ Back</a>
+        <h3 class="text-primary font-weight-bold mt-3 mb-4">Upload Document</h3>
+
+        <div id="flashContainer">
+          <% if (typeof message !== "undefined" && message) { %>
+            <div class="alert alert-success">
+              <%= message %>
             </div>
-          </form>
+          <% } %>
+
+          <% if (typeof errorMessage !== "undefined" && errorMessage) { %>
+            <div class="alert alert-danger">
+              <%= errorMessage %>
+            </div>
+          <% } %>
         </div>
-      </main>
-    </div>
 
-    <script>
-      (() => {
-        const form = document.getElementById("uploadForm"),
-          input = document.getElementById("fileInput");
-        const drop = document.getElementById("dropzone"),
-          list = document.getElementById("fileList");
-        const count = document.getElementById("fileCount"),
-          submit = document.getElementById("submitBtn");
-        const maxFile = <%= maxMB * 1024 * 1024 %>,
-          maxTotal = <%= maxTotalMB * 1024 * 1024 %>,
-          maxFiles = <%= maxFiles %>;
-        const allowed = ["pdf", "doc", "docx", "xls", "xlsx"];
-        let selected = [];
-        const fmt = (n) =>
-          n < 1024 * 1024
-            ? (n / 1024).toFixed(1) + " KB"
-            : (n / 1024 / 1024).toFixed(2) + " MB";
-        function defaultName(f) {
-          return f.name
-            .replace(/\.[^.]+$/, "")
-            .replace(/[_-]+/g, " ")
-            .trim();
-        }
-        function validate(file) {
-          const ext = file.name.includes(".")
-            ? file.name.split(".").pop().toLowerCase()
-            : "";
-          if (!allowed.includes(ext)) return "Format tidak didukung: " + file.name;
-          if (file.size > maxFile)
-            return "File melebihi batas per file: " + file.name;
-          return "";
-        }
-        function render() {
-          list.innerHTML = "";
-          selected.forEach((item, i) => {
-            const row = document.createElement("div");
-            row.className = "file-row";
-            row.innerHTML = `<div class="d-flex align-items-start">
-            <div class="flex-fill pr-3">
-              <label class="font-weight-bold mb-1">Nama dokumen</label>
-              <input class="form-control form-control-sm doc-name" maxlength="255" value="">
-              <div class="file-name mt-2"></div>
+
+        <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data" class="card shadow-sm border-0" >
+          <div class="card-body p-4 upload-card-body">
+            <div class="form-group">
+              <label for="institutionName">Partner Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="institutionName" name="institutionName" maxlength="256" placeholder="ex: Pemda Kota Bandung" autocomplete="organization" required >
             </div>
-            <button type="button" class="btn btn-sm btn-outline-danger remove-file" aria-label="Hapus">Hapus</button>
-          </div>`;
-            row.querySelector(".doc-name").value = item.name;
-            row.querySelector(".file-name").textContent =
-              item.file.name + " · " + fmt(item.file.size);
-            row.querySelector(".doc-name").addEventListener("input", (e) => {
-              item.name = e.target.value;
-            });
-            row.querySelector(".remove-file").addEventListener("click", () => {
-              selected.splice(i, 1);
-              render();
-            });
-            list.appendChild(row);
-          });
-          const total = selected.reduce((s, x) => s + x.file.size, 0);
-          count.textContent = selected.length + " file · " + fmt(total);
-          submit.disabled = selected.length === 0;
+            <div class="form-group">
+              <label for="integrationType">API Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="integrationType" name="integrationType" maxlength="128" placeholder="ex: Virtual Account SNAP Off Us" required >
+            </div>
+
+            <hr>
+
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h5 class="font-weight-bold mb-0">Documents List</h5>
+              <span class="badge badge-primary" id="fileCount" aria-live="polite" > 0 file </span>
+            </div>
+
+            <p class="text-muted small">
+              Select or drag multiple files. Document names automatically
+              match the filenames and can be edited before saving.
+            </p>
+
+            <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Pilih atau jatuhkan dokumen di sini" >
+              <div class="h4 mb-2">☁</div>
+              <strong>Drag and drop files here</strong>
+              <div class="text-muted small my-2"> or click to select multiple files </div>
+              <span class="btn btn-outline-primary btn-sm">Select Documents </span>
+              <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.xls,.xlsx" multiple hidden>
+            </div>
+
+            <div class="small text-muted mt-2">
+              Formats: PDF, DOC, DOCX, XLS, XLSX.
+              Max. <%= maxMB %> MB per file,
+              <%= maxTotalMB %> MB total,
+              up to <%= maxFiles %> files per process.
+            </div>
+
+            <div id="fileList" class="mt-4"></div>
+
+            <div class="d-flex justify-content-end mt-4 upload-actions">
+              <a href="/" class="btn btn-light mr-2">Cancel</a>
+              <button type="button" class="btn btn-primary" id="btnPreviewUpload">Upload</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <!-- Review Confirmation Modal -->
+  <div class="modal fade" id="reviewModal" tabindex="-1" role="dialog" aria-labelledby="reviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog mt-5 modal-lg" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 10px;">
+            <div class="modal-header">
+                <h5 class="modal-title font-weight-bold text-primary" id="reviewModalLabel">Review Data</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="outline: none;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body py-3">
+                <table class="table table-sm table-borderless mb-3">
+                    <tr>
+                        <td class="font-weight-bold p-0" style="width: 150px;">Partner Name</td>
+                        <td class="p-0" style="width: 20px;">:</td>
+                        <td class="p-0" id="reviewPartner"></td>
+                    </tr>
+                    <tr>
+                        <td class="font-weight-bold p-0">API Name</td>
+                        <td class="p-0">:</td>
+                        <td class="p-0" id="reviewApi"></td>
+                    </tr>
+                </table>
+                
+                <h6 class="font-weight-bold text-secondary mt-4 mb-2">Documents to be Uploaded:</h6>
+                <div class="card border rounded-lg">
+                    <ul class="list-group list-group-flush" id="reviewDocList">
+                        
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light font-weight-bold text-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" id="confirmSubmitBtn" class="btn btn-primary font-weight-bold">Upload</button>
+            </div>
+        </div>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const form = document.getElementById("uploadForm");
+      const input = document.getElementById("fileInput");
+      const drop = document.getElementById("dropzone");
+      const list = document.getElementById("fileList");
+      const count = document.getElementById("fileCount");
+      const btnPreview = document.getElementById("btnPreviewUpload");
+      const flashContainer = document.getElementById("flashContainer");
+
+      const maxFile = Number("<%= maxMB %>") * 1024 * 1024;
+      const maxTotal = Number("<%= maxTotalMB %>") * 1024 * 1024;
+      const maxFiles = Number("<%= maxFiles %>");
+      const allowed = ["pdf", "doc", "docx", "xls", "xlsx"];
+
+      let selected = [];
+      let isUploading = false;
+
+      function triggerFlashError(message) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        flashContainer.innerHTML = `
+          <div class="alert alert-danger alert-dismissible text-center fade show w-100 shadow-sm" role="alert">
+            <strong>${message}</strong>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close" style="outline: none;">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+        `;
+      }
+
+      function clearFlashError() {
+        const duplicateAlert = document.getElementById("duplicateAlert");
+        if (duplicateAlert) {
+          duplicateAlert.remove();
         }
-        function addFiles(files) {
-          const incoming = Array.from(files || []);
-          for (const file of incoming) {
-            const err = validate(file);
-            if (err) {
-              alert(err);
-              continue;
+      }
+
+      function formatSize(size) {
+        return size < 1024 * 1024 ? (size / 1024).toFixed(1) + " KB" : (size / 1024 / 1024).toFixed(2) + " MB";
+      }
+
+      function defaultName(file) {
+        return file.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").trim();
+      }
+
+      function getExtension(filename) {
+        return filename.split(".").length < 2 ? "" : filename.split(".").pop().toLowerCase();
+      }
+
+      function getTotalSize() {
+        return selected.reduce((total, item) => total + item.file.size, 0);
+      }
+
+      function validateFile(file) {
+        const ext = getExtension(file.name);
+        if (!allowed.includes(ext)) return `Format file tidak didukung! Gunakan ${allowed}`;
+        if (file.size === 0) return `File kosong tidak dapat diunggah: ${file.name}`;
+        if (file.size > maxFile) return `Ukuran file terlalu besar! Ukuran maksimal adalah ${maxFile / (1024 * 1024)} MB`;
+        return "";
+      }
+
+      function hasDuplicateDocumentNames() {
+        const names = selected.map(item => item.name.trim().toLowerCase());
+        return names.some((name, index) => names.indexOf(name) !== index);
+      }
+
+      function render() {
+        list.innerHTML = "";
+
+        selected.forEach((item, index) => {
+          const row = document.createElement("div");
+          row.className = "file-row";
+          row.innerHTML = `
+            <div class="row align-items-center no-gutters">
+              <div class="col-auto pr-3">
+                <label class="font-weight-bold mb-0 text-dark" style="font-size: 14px; min-width: 110px;">Document Name</label>
+              </div>
+              <div class="col">
+                <input type="text" class="form-control form-control-sm doc-name" maxlength="255" placeholder="Input document name" required>
+              </div>
+              <div class="col-auto pl-4">
+                <button type="button" class="btn btn-sm btn-outline-danger remove-file">Delete</button>
+              </div>
+            </div>
+            <div class="row no-gutters mt-1">
+              <div class="col-auto pr-3"><div style="min-width: 110px;"></div></div>
+              <div class="col"><div class="file-name text-muted small pl-1" style="font-size: 12px;"></div></div>
+            </div>
+          `;
+
+          const nameInput = row.querySelector(".doc-name");
+          const fileName = row.querySelector(".file-name");
+          const removeButton = row.querySelector(".remove-file");
+
+          nameInput.value = item.name;
+          fileName.textContent = item.file.name + " · " + formatSize(item.file.size);
+
+          nameInput.addEventListener("input", (e) => { 
+            item.name = e.target.value; 
+            
+            // Cek duplikasi setiap kali user mengetik nama baru
+            if (hasDuplicateDocumentNames()) {
+              // Jika belum ada alert yang tampil, panggil flash message bawaan
+              if (!document.getElementById("duplicateAlert")) {
+                triggerFlashError("Nama dokumen di dalam list tidak boleh sama. Silakan rename dokumen pada field dibawah!");
+              }
+            } else {
+              // Jika nama sudah unik semua, bersihkan flash message secara otomatis
+              clearFlashError();
             }
-            if (selected.length >= maxFiles) {
-              alert("Maksimal " + maxFiles + " file.");
-              break;
-            }
-            if (
-              selected.some(
-                (x) => x.file.name === file.name && x.file.size === file.size,
-              )
-            ) {
-              continue;
-            }
-            if (
-              selected.reduce((s, x) => s + x.file.size, 0) + file.size >
-              maxTotal
-            ) {
-              alert("Total ukuran maksimal " + fmt(maxTotal) + ".");
-              break;
-            }
-            selected.push({ file, name: defaultName(file) });
+
+            btnPreview.disabled = selected.length === 0 || isUploading || hasDuplicateDocumentNames();
+          });
+          
+          removeButton.addEventListener("click", () => { 
+            selected.splice(index, 1); 
+            render(); 
+          });
+          list.appendChild(row);
+        });
+
+        count.textContent = selected.length + " file · " + formatSize(getTotalSize());
+        
+        // Cek duplikasi saat pertama kali file dimasukkan atau saat ada file yang dihapus
+        if (hasDuplicateDocumentNames()) {
+          if (!document.getElementById("duplicateAlert")) {
+            triggerFlashError("Nama dokumen di dalam list tidak boleh sama. Silakan rename dokumen pada field dibawah");
           }
-          input.value = "";
+        } else {
+          clearFlashError();
+        }
+
+        btnPreview.disabled = selected.length === 0 || isUploading || hasDuplicateDocumentNames();
+      }
+
+      function addFiles(files) {
+        if (isUploading) return;
+        for (const file of Array.from(files || [])) {
+          const err = validateFile(file);
+          if (err) { triggerFlashError(err); continue; }
+          if (selected.length >= maxFiles) { triggerFlashError("Maksimal " + maxFiles + " file."); break; }
+          if (selected.some(item => item.file.name === file.name && item.file.size === file.size)) { triggerFlashError("File sudah ada dalam antrean: " + file.name); continue; }
+          if (getTotalSize() + file.size > maxTotal) { triggerFlashError("Total ukuran seluruh file melebihi batas maksimal."); break; }
+
+          selected.push({ file: file, name: defaultName(file) });
+        }
+        render();
+      }
+
+      drop.addEventListener("click", () => { if (!isUploading) input.click(); });
+      input.addEventListener("change", () => addFiles(input.files));
+
+      ["dragenter", "dragover"].forEach(name => {
+        drop.addEventListener(name, (e) => { e.preventDefault(); if (!isUploading) drop.classList.add("drag"); });
+      });
+
+      ["dragleave", "drop"].forEach(name => {
+        drop.addEventListener(name, (e) => { e.preventDefault(); drop.classList.remove("drag"); });
+      });
+
+      drop.addEventListener("drop", (e) => { e.preventDefault(); if (!isUploading) addFiles(e.dataTransfer.files); });
+
+      // Event handler untuk membuka modal konfirmasi data review
+      btnPreview.addEventListener("click", () => {
+        if (!form.checkValidity()) { form.reportValidity(); return; }
+        if (selected.length === 0) { triggerFlashError("Pilih minimal satu dokumen terlebih dahulu."); return; }
+
+        if (hasDuplicateDocumentNames()) {
+          triggerFlashError("Gagal memproses data. Nama dokumen di dalam daftar tidak boleh ada yang sama!");
+          btnPreview.disabled = true;
+          return;
+        }
+
+        $('#reviewPartner').text($('#institutionName').val().trim());
+        $('#reviewApi').text($('#integrationType').val().trim());
+        $('#reviewDocList').empty();
+
+        selected.forEach(item => {
+          $('#reviewDocList').append(`
+            <li class="list-group-item d-flex align-items-center py-2">
+              <span class="text-primary mr-2">📄</span><span class="text-truncate font-weight-medium">${item.name.trim()}</span>
+            </li>
+          `);
+        });
+        $('#reviewModal').modal('show');
+      });
+
+      // Eksekusi pengunggahan data (Fetch API) setelah klik tombol konfirmasi di dalam modal
+      document.getElementById("confirmSubmitBtn").addEventListener("click", async function() {
+        const formData = new FormData(form);
+        formData.delete("documents");
+        
+        selected.forEach(item => {
+          formData.append("documents", item.file, item.file.name);
+          formData.append("documentNames", item.name.trim());
+        });
+
+        isUploading = true;
+        this.disabled = true;
+        this.textContent = "Uploading...";
+
+        try {
+          const response = await fetch(form.action, { method: "POST", body: formData, redirect: "follow" });
+          
+          if (response.redirected) { 
+            window.location.assign(response.url); 
+            return; 
+          }
+          
+          if (!response.ok) throw new Error("Upload gagal. Kode status HTTP " + response.status);
+        } catch (error) {
+          console.error(error);
+          
+          // Jika terjadi kesalahan dari backend rute, tampilkan langsung ke flash message
+          triggerFlashError(error.message || "Terjadi kesalahan sistem pengunggahan.");
+          
+          isUploading = false;
+          this.disabled = false;
+          this.textContent = "Upload";
+          $('#reviewModal').modal('hide');
           render();
         }
-        drop.addEventListener("click", () => input.click());
-        input.addEventListener("change", () => addFiles(input.files));
-        ["dragenter", "dragover"].forEach((ev) =>
-          drop.addEventListener(ev, (e) => {
-            e.preventDefault();
-            drop.classList.add("drag");
-          }),
-        );
-        ["dragleave", "drop"].forEach((ev) =>
-          drop.addEventListener(ev, (e) => {
-            e.preventDefault();
-            drop.classList.remove("drag");
-          }),
-        );
-        drop.addEventListener("drop", (e) => addFiles(e.dataTransfer.files));
-        form.addEventListener("submit", (e) => {
-          if (!selected.length) {
-            e.preventDefault();
-            alert("Pilih minimal satu dokumen.");
-            return;
-          }
-          const names = selected.map((x) => x.name.trim());
-          if (names.some((x) => !x)) {
-            e.preventDefault();
-            alert("Nama dokumen tidak boleh kosong.");
-            return;
-          }
-          const total = selected.reduce((s, x) => s + x.file.size, 0);
-          if (total > maxTotal) {
-            e.preventDefault();
-            alert("Total ukuran file melebihi batas.");
-            return;
-          }
-          const data = new FormData(form);
-          data.delete("documents");
-          data.delete("documentNames");
-          selected.forEach((x) => {
-            data.append("documents", x.file, x.file.name);
-            data.append("documentNames", x.name);
-          });
-          e.preventDefault();
-          submit.disabled = true;
-          submit.textContent = "Mengunggah...";
-          fetch(form.action, { method: "POST", body: data, redirect: "follow" })
-            .then((r) => {
-              if (r.redirected) location.href = r.url;
-              else
-                return r.text().then((t) => {
-                  throw new Error(t || "Upload gagal");
-                });
-            })
-            .catch((err) => {
-              alert(err.message || "Upload gagal");
-              submit.disabled = false;
-              submit.textContent = "Upload Semua Dokumen";
-            });
-        });
-      })();
-    </script>
+      });
+
+      render();
+    })();
+  </script>
+
 </body>
 </html>
-

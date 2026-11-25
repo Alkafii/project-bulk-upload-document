@@ -106,16 +106,17 @@ function flashError(req, res, message, url) {
 
 router.get("/", checkAuth, async (req, res) => {
   try {
-    const result = await db.query(`
-      SELECT i.*,
-             COUNT(d.id)::int AS uploaded_count
-      FROM upload_document i
-      LEFT JOIN uploaded_documents d ON d.upload_document_id = i.id
-      GROUP BY i.id
-      ORDER BY i.id DESC
-    `);
+    const result = await db.query(` SELECT i.*, COUNT(d.id)::int AS uploaded_count FROM upload_document i LEFT JOIN uploaded_documents d ON d.upload_document_id = i.id GROUP BY i.id ORDER BY i.id DESC `);
+    const docs = await db.query( `SELECT * FROM uploaded_documents ORDER BY id ASC` );
+
+    let totalSize = 0;
+    for (let i = 0; i < docs.rows.length; i++) {
+      totalSize += Number(docs.rows[i].file_size);
+    }
+
     res.render("index.ejs", {
       integrations: result.rows,
+      totalSize: (totalSize / (1024 * 1024)).toFixed(2),
       message: req.flash("success")[0] || "",
       errorMessage: req.flash("error")[0] || ""
     });
@@ -145,15 +146,33 @@ router.post("/upload", checkAuth, upload.array("documents", MAX_FILES), async (r
     const files = req.files || [];
     validateUploadBatch(files);
 
-    const institution = text(req.body.institutionName, 256);
-    const apiName = text(req.body.integrationType, 128);
-    const documentNames = ensureArray(req.body.documentNames);
+    const institution = text(req.body.institutionName, 256)?.trim();
+    const apiName = text(req.body.integrationType, 128)?.trim();
+    const documentNames = ensureArray(req.body.documentNames).map(name => name?.trim());
 
     if (!institution || !apiName) {
-      return flashError(req, res, "Nama mitra dan API Name wajib diisi.", "/upload");
+      throw new Error("Nama mitra (Partner Name) dan API Name wajib diisi.");
+    }
+    if (files.length === 0) {
+      throw new Error("Silakan pilih minimal 1 dokumen untuk diunggah.");
     }
     if (documentNames.length !== files.length) {
-      return flashError(req, res, "Data nama dokumen tidak sesuai dengan jumlah file. Silakan pilih ulang dokumen.", "/upload");
+      throw new Error("Jumlah nama dokumen tidak sesuai dengan berkas yang dipilih.");
+    }
+
+    const lowerCaseNames = [];
+    for (const docName of documentNames) {
+      if (!docName) {
+        throw new Error("Nama dokumen tidak boleh kosong.");
+      }
+      if (docName.length > 255) {
+        throw new Error("Nama dokumen terlalu panjang (maksimal 255 karakter).");
+      }
+      lowerCaseNames.push(docName.toLowerCase());
+    }
+  
+    if (new Set(lowerCaseNames).size !== lowerCaseNames.length) {
+      throw new Error("Nama dokumen di dalam daftar tidak boleh ada yang sama.");
     }
 
     await fs.mkdir(folderPath, { recursive: true });
@@ -162,10 +181,8 @@ router.post("/upload", checkAuth, upload.array("documents", MAX_FILES), async (r
     await client.query("BEGIN");
 
     const integrationResult = await client.query(
-      `INSERT INTO upload_document
-        (name, api_name, folder_name, created_at, updated_at)
-       VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-       RETURNING id`,
+      `INSERT INTO upload_document (name, api_name, folder_name, created_at, updated_at) 
+       VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id`,
       [institution, apiName, folderName]
     );
     const integrationId = integrationResult.rows[0].id;
@@ -179,17 +196,20 @@ router.post("/upload", checkAuth, upload.array("documents", MAX_FILES), async (r
     await client.query("COMMIT");
     req.flash("success", `${files.length} dokumen berhasil diunggah.`);
     return res.redirect("/");
+
   } catch (err) {
     if (client) await client.query("ROLLBACK").catch(() => {});
     if (createdFiles.length || folderName) {
       await fs.rm(folderPath, { recursive: true, force: true }).catch(() => {});
     }
     console.error("POST /upload error:", err);
+    
     return flashError(req, res, err.message || "Gagal menyimpan dokumen.", "/upload");
   } finally {
     client?.release();
   }
 });
+
 
 router.get("/read_data", checkAuth, async (req, res) => {
   try {
@@ -207,8 +227,14 @@ router.get("/read_data", checkAuth, async (req, res) => {
       [id]
     );
 
+    let totalSize = 0;
+    for (let i = 0; i < docs.rows.length; i++) {
+      totalSize += Number(docs.rows[i].file_size);
+    }
+    
     res.render("read_data.ejs", {
       integration,
+      totalSize: (totalSize / (1024 * 1024)).toFixed(2),
       documents: docs.rows,
       message: req.flash("success")[0] || "",
       errorMessage: req.flash("error")[0] || ""
@@ -231,6 +257,7 @@ router.get("/view_file", checkAuth, async (req, res) => {
        WHERE d.id = $1`,
       [docId]
     );
+
     const doc = result.rows[0];
     if (!doc) return res.status(404).send("Dokumen tidak ditemukan.");
 
@@ -285,10 +312,7 @@ router.get("/update_data", checkAuth, async (req, res) => {
   }
 });
 
-router.post(
-  "/update_data",
-  checkAuth,
-  upload.fields([
+router.post("/update_data",checkAuth,upload.fields([
     { name: "newDocuments", maxCount: MAX_FILES },
     { name: "replacementFiles", maxCount: MAX_FILES }
   ]),
@@ -451,20 +475,48 @@ router.get("/delete_file", checkAuth, async (req, res) => {
 
 router.get("/delete", checkAuth, async (req, res) => {
   try {
-    const id = Number(req.query.id);
-    if (!Number.isInteger(id) || id <= 0) return res.status(400).send("ID tidak valid.");
-    const integration = await getIntegration(id);
-    if (!integration) return res.status(404).send("Data integrasi tidak ditemukan.");
+    const idQuery = req.query.id;
+    if (!idQuery) return res.status(400).send("ID tidak valid.");
 
-    await db.query("DELETE FROM upload_document WHERE id = $1", [id]);
-    await fs.rm(path.join(STORAGE_ROOT, integration.folder_name), { recursive: true, force: true });
-    req.flash("success", "Data integrasi dan seluruh dokumennya berhasil dihapus.");
+    const idStrings = String(idQuery).split(",");
+    const ids = [];
+
+    for (const str of idStrings) {
+      const parsedId = Number(str.trim());
+      if (!Number.isInteger(parsedId) || parsedId <= 0) {
+        return res.status(400).send("ID tidak valid.");
+      }
+      ids.push(parsedId);
+    }
+
+    for (const id of ids) {
+      const integration = await getIntegration(id);
+      
+      if (integration) {
+        await db.query("DELETE FROM upload_document WHERE id = $1", [id]);
+        
+        if (integration.folder_name) {
+          await fs.rm(path.join(STORAGE_ROOT, integration.folder_name), { 
+            recursive: true, 
+            force: true 
+          });
+        }
+      }
+    }
+
+    const successMessage = ids.length > 1 
+      ? "Semua data integrasi yang dipilih dan seluruh dokumennya berhasil dihapus."
+      : "Data integrasi dan seluruh dokumennya berhasil dihapus.";
+
+    req.flash("success", successMessage);
     return res.redirect("/");
+
   } catch (err) {
     console.error("GET /delete error:", err);
     res.status(500).send("Gagal menghapus data integrasi.");
   }
 });
+
 
 router.get("/login", isAlreadyLoggedIn, (req, res) => {
   res.render("login.ejs", { errorMessage: req.flash("error")[0] || "" });

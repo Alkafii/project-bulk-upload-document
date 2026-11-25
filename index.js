@@ -43,5 +43,4 @@ app.use((err, req, res, next) => {
 
 app.listen(port, () => {
   console.log(`Server berjalan di http://localhost:${port}`);
-  console.log(`Batas total upload per proses: ${MAX_TOTAL_MB} MB`);
 });
