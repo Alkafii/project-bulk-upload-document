@@ -141,35 +141,35 @@
             <hr>
 
             <div class="d-flex justify-content-between align-items-center mb-2">
-              <h5 class="font-weight-bold mb-0">Documents List</h5>
-              <span class="badge badge-primary" id="fileCount" aria-live="polite" > 0 file </span>
+                <h5 class="font-weight-bold mb-0">Document List</h5>
+                <span class="badge badge-primary" id="fileCount" aria-live="polite">0 files</span>
             </div>
 
             <p class="text-muted small">
-              Select or drag multiple files. Document names automatically
-              match the filenames and can be edited before saving.
+                Select or drag multiple files. Document names automatically
+                match the filenames and can be edited before saving.
             </p>
 
-            <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Pilih atau jatuhkan dokumen di sini" >
-              <div class="h4 mb-2">☁</div>
-              <strong>Drag and drop files here</strong>
-              <div class="text-muted small my-2"> or click to select multiple files </div>
-              <span class="btn btn-outline-primary btn-sm">Select Documents </span>
-              <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.xls,.xlsx" multiple hidden>
+            <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Select or drag documents here">
+                <div class="h4 mb-2">☁</div>
+                <strong>Drag and drop files here</strong>
+                <div class="text-muted small my-2">or click to select multiple files</div>
+                <span class="btn btn-outline-primary btn-sm">Select Documents</span>
+                <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.xls,.xlsx" multiple hidden>
             </div>
 
             <div class="small text-muted mt-2">
-              Formats: PDF, DOC, DOCX, XLS, XLSX.
-              Max. <%= maxMB %> MB per file,
-              <%= maxTotalMB %> MB total,
-              up to <%= maxFiles %> files per process.
+                Formats: PDF, DOC, DOCX, XLS, XLSX.
+                Max. <%= maxMB %> MB per file,
+                <%= maxTotalMB %> MB total,
+                up to <%= maxFiles %> files per process.
             </div>
 
             <div id="fileList" class="mt-4"></div>
 
             <div class="d-flex justify-content-end mt-4 upload-actions">
-              <a href="/" class="btn btn-light mr-2">Cancel</a>
-              <button type="button" class="btn btn-primary" id="btnPreviewUpload">Upload</button>
+                <a href="/" class="btn btn-light mr-2">Cancel</a>
+                <button type="button" class="btn btn-primary" id="btnPreviewUpload">Upload</button>
             </div>
           </div>
         </form>
@@ -201,7 +201,7 @@
                     </tr>
                 </table>
                 
-                <h6 class="font-weight-bold text-secondary mt-4 mb-2">Documents to be Uploaded:</h6>
+                <h6 class="font-weight-bold text-secondary mt-4 mb-2">Document to be Uploaded:</h6>
                 <div class="card border rounded-lg">
                     <ul class="list-group list-group-flush" id="reviewDocList">
                         
@@ -322,14 +322,11 @@
           nameInput.addEventListener("input", (e) => { 
             item.name = e.target.value; 
             
-            // Cek duplikasi setiap kali user mengetik nama baru
             if (hasDuplicateDocumentNames()) {
-              // Jika belum ada alert yang tampil, panggil flash message bawaan
               if (!document.getElementById("duplicateAlert")) {
                 triggerFlashError("Nama dokumen di dalam list tidak boleh sama. Silakan rename dokumen pada field dibawah!");
               }
             } else {
-              // Jika nama sudah unik semua, bersihkan flash message secara otomatis
               clearFlashError();
             }
 
@@ -345,7 +342,6 @@
 
         count.textContent = selected.length + " file · " + formatSize(getTotalSize());
         
-        // Cek duplikasi saat pertama kali file dimasukkan atau saat ada file yang dihapus
         if (hasDuplicateDocumentNames()) {
           if (!document.getElementById("duplicateAlert")) {
             triggerFlashError("Nama dokumen di dalam list tidak boleh sama. Silakan rename dokumen pada field dibawah");
@@ -409,7 +405,6 @@
         $('#reviewModal').modal('show');
       });
 
-      // Eksekusi pengunggahan data (Fetch API) setelah klik tombol konfirmasi di dalam modal
       document.getElementById("confirmSubmitBtn").addEventListener("click", async function() {
         const formData = new FormData(form);
         formData.delete("documents");
