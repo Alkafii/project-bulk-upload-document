@@ -93,7 +93,9 @@
                                                     <%= item.uploaded_count %>
                                                 </span>
                                             </td>
-                                            <td class="text-center"><%= totalSize %> MB</td>
+                                            <td class="text-center">
+                                                <%= (Number(item.total_file_size) / (1024 * 1024)).toFixed(2) %> MB
+                                            </td>
                                             <td class="text-nowrap text-center pr-4">
                                                 <a href="/read_data?id=<%= item.id %>" class="btn btn-sm btn-outline-primary mr-1">View</a>
                                             </td>

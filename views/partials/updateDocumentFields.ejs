@@ -1,8 +1,0 @@
-<div class="form-row mb-3">
-    <% documents.forEach((doc, index) => { %>
-        <div class="form-group col-md-6 mb-3 <%= index % 2 === 0 ? 'pr-3' : 'pl-3' %>">
-            <label><%= doc.label %></label>
-            <%- fields[doc.name] %>
-        </div>
-    <% }) %>
-</div>

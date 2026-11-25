@@ -106,17 +106,29 @@ function flashError(req, res, message, url) {
 
 router.get("/", checkAuth, async (req, res) => {
   try {
-    const result = await db.query(` SELECT i.*, COUNT(d.id)::int AS uploaded_count FROM upload_document i LEFT JOIN uploaded_documents d ON d.upload_document_id = i.id GROUP BY i.id ORDER BY i.id DESC `);
-    const docs = await db.query( `SELECT * FROM uploaded_documents ORDER BY id ASC` );
+    const queryText = ` SELECT i.*, COUNT(d.id)::int AS uploaded_count, COALESCE(SUM(d.file_size), 0)::bigint AS total_file_size FROM upload_document i LEFT JOIN uploaded_documents d ON d.upload_document_id = i.id GROUP BY i.id ORDER BY i.id DESC `;
+    
+    const result = await db.query(queryText);
 
-    let totalSize = 0;
-    for (let i = 0; i < docs.rows.length; i++) {
-      totalSize += Number(docs.rows[i].file_size);
+    if (!result || !Array.isArray(result.rows)) {
+      return res.render("index.ejs", {
+        integrations: [],
+        message: req.flash("success")[0] || "",
+        errorMessage: "Format data dari database tidak valid."
+      });
     }
 
+    const integrationsWithFormat = result.rows.map(item => {
+      const sizeInMB = (Number(item.total_file_size) / (1024 * 1024)).toFixed(2);
+      
+      return {
+        ...item,
+        formatted_total_size: sizeInMB + " MB" // Menghasilkan string contoh: "0.32 MB"
+      };
+    });
+
     res.render("index.ejs", {
-      integrations: result.rows,
-      totalSize: (totalSize / (1024 * 1024)).toFixed(2),
+      integrations: integrationsWithFormat,
       message: req.flash("success")[0] || "",
       errorMessage: req.flash("error")[0] || ""
     });
@@ -125,6 +137,7 @@ router.get("/", checkAuth, async (req, res) => {
     res.status(500).send("Gagal mengambil data integrasi.");
   }
 });
+
 
 router.get("/upload", checkAuth, (req, res) => {
   res.render("upload.ejs", {

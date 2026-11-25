@@ -1,0 +1,41 @@
+<style>
+    .dropzone {
+        border: 2px dashed #9bb8df;
+        border-radius: 10px;
+        background: #f7faff;
+        padding: 25px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .dropzone:hover,
+    .dropzone.dragover {
+        border-color: #007bff;
+        background: #eef5ff;
+    }
+
+    .dropzone .btn {
+        pointer-events: none;
+    }
+</style>
+
+<p class="text-muted small">
+    Select or drag multiple files. Document names automatically
+    match the filenames and can be edited before saving.
+</p>
+            
+<div class="dropzone" id="<%= dropzoneId %>" role="button" tabindex="0" aria-label="Select or drag documents here">
+    <div class="h4 mb-2">☁</div>
+    <strong>Drag and drop files here</strong>
+    <div class="text-muted small my-2"> or click to select multiple files </div>
+    <span class="btn btn-outline-primary btn-sm"> Select Documents </span>
+    <input type="file" id="<%= inputId %>" multiple accept=".pdf,.doc,.docx,.xls,.xlsx" hidden >
+</div>
+
+<div class="small text-muted mt-2">
+    Formats: PDF, DOC, DOCX, XLS, XLSX.
+    Max. <%= maxMB %> MB per file,
+    <%= maxTotalMB %> MB total,
+    up to <%= maxFiles %> files per process.
+</div>
