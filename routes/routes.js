@@ -460,19 +460,15 @@ router.get("/read_data", checkAuth, async (req, res) => {
     const errorMessage = req.flash("error")[0] || "";
 
     if (message) {
-      alertHTML += `
-        <div class="alert alert-success">
-          ${escapeHTML(message)}
-        </div>
-      `;
+      alertHTML += `<div class="alert alert-success">
+                      ${escapeHTML(message)}
+                    </div>`;
     }
 
     if (errorMessage) {
-      alertHTML += `
-        <div class="alert alert-danger">
-          ${escapeHTML(errorMessage)}
-        </div>
-      `;
+      alertHTML += `<div class="alert alert-danger">
+                      ${escapeHTML(errorMessage)}
+                    </div>`;
     }
 
     return res.render("read_data.ejs", {
@@ -820,16 +816,33 @@ router.post("/update_data",checkAuth,upload.fields([
       }
 
       req.flash("success", successMessage);
-      return res.redirect(`/read_data?id=${id}`);
+
+      req.session.save(function (err) {
+          if (err) {
+              console.error("Gagal menyimpan session:", err);
+
+              return res.status(500).json({
+                  message: "Dokumen berhasil diproses, tetapi gagal menyimpan pesan notifikasi."
+              });
+          }
+
+          return res.status(200).json({
+              success: true,
+              redirectUrl: `/read_data?id=${id}`
+          });
+      });
     } catch (err) {
-      if (client) await client.query("ROLLBACK").catch(() => {});
-      if (folderPath) {
-        for (const filename of filesWritten) {
-          await fs.unlink(path.join(folderPath, filename)).catch(() => {});
-        }
-      }
       console.error("POST /update_data error:", err);
-      return flashError(req, res, err.message || "Gagal memperbarui dokumen.", redirectUrl);
+      const errorMessage = err.message || "Gagal memperbarui dokumen.";
+
+      if (req.get("X-Requested-With") === "XMLHttpRequest") {
+          return res.status(400).json({
+              success: false,
+              message: errorMessage
+          });
+      }
+
+      return flashError(req, res, errorMessage, redirectUrl);
     } finally {
       client?.release();
     }
