@@ -317,13 +317,32 @@
 
         isUploading = true; this.disabled = true; this.textContent = "Uploading...";
         try {
-          const res = await fetch(form.action, { method: "POST", body: formData, redirect: "follow" });
-          if (res.redirected) { window.location.assign(res.url); return; }
-          if (!res.ok) throw new Error("Upload gagal. Status: " + res.status);
+            const res = await fetch(form.action, {
+                method: "POST",
+                body: formData,
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            });
+
+            const result = await res.json();
+
+            if (!res.ok || !result.success) {
+                throw new Error(result.message || "Upload gagal.");
+            }
+
+            // Redirect hanya setelah session berhasil disimpan
+            window.location.assign(result.redirectUrl);
+
         } catch (err) {
-          triggerFlashError(err.message || "Terjadi kesalahan sistem pengunggahan.");
-          isUploading = false; this.disabled = false; this.textContent = "Upload";
-          $('#reviewModal').modal('hide'); render();
+            triggerFlashError(err.message || "Terjadi kesalahan sistem pengunggahan.");
+
+            isUploading = false;
+            this.disabled = false;
+            this.textContent = "Upload";
+
+            $('#reviewModal').modal('hide');
+            render();
         }
       });
 

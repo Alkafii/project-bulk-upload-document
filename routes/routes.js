@@ -215,14 +215,54 @@ router.get("/", checkAuth, async (req, res) => {
       }
     }
 
-    return res.render("index.ejs", {
-        tableRows: tableRows,
-        successMessage: req.flash("success")[0] || "",
-        errorMessage: req.flash("error")[0] || ""
-    });
+    await client.query("COMMIT");
+    const successMessage = `Data integrasi berhasil ditambahkan. ${files.length} dokumen berhasil diunggah.`;
+
+    req.flash("success", successMessage);
+
+    if (req.get("X-Requested-With") === "XMLHttpRequest") {
+        return req.session.save(function (err) {
+            if (err) {
+                console.error("Gagal menyimpan session:", err);
+
+                return res.status(500).json({
+                    success: false,
+                    message: "Data berhasil disimpan, tetapi gagal menyimpan notifikasi."
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                redirectUrl: "/"
+            });
+        });
+    }
+
+    return res.redirect("/");
   } catch (err) {
-    console.error("GET / error:", err);
-    return res.status(500).send("Gagal mengambil data integrasi.");
+      if (client) {
+          await client.query("ROLLBACK").catch(() => {});
+      }
+
+      if (folderName) {
+          await fs.rm(folderPath, {
+              recursive: true,
+              force: true
+          }).catch(() => {});
+      }
+
+      console.error("POST /upload error:", err);
+
+      const errorMessage = err.message || "Gagal menyimpan dokumen.";
+
+      if (req.get("X-Requested-With") === "XMLHttpRequest") {
+          return res.status(400).json({
+              success: false,
+              message: errorMessage
+          });
+      }
+
+      return flashError(req, res, errorMessage, "/upload");
   }
 });
 
