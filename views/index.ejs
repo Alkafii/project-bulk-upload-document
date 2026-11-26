@@ -60,49 +60,11 @@
                                         <th class="text-center pr-4">Action</th>
                                     </tr>
                                 </thead>
+
                                 <tbody>
-                                    <% if (typeof integrations === 'undefined' || !integrations.length) { %>
-                                    <tr>
-                                        <td colspan="8" class="p-0 bg-white">
-                                            <div class="row no-gutters p-4 text-center bg-white text-muted justify-content-center">
-                                                No integration data available.
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <% } else { %>
-                                    <% integrations.forEach((item, i) => { %>
-                                        <tr class="align-middle">
-                                            <td class="pl-4 align-middle" style="width: 90px;">
-                                                <div class="d-flex align-items-center justify-content-start">
-                                                    <div style="width: 32px;" class="text-left d-flex align-items-center">
-                                                        <input class="form-check-input check" type="checkbox" id="check_<%= item.id %>" value="<%= item.id %>" data-name="<%= item.name %>" style="position: static; margin: 0; flex-shrink: 0;">
-                                                    </div>
-                                                    <span class="font-weight-bold text-muted pl-1 align-self-cente"><%= i + 1 %></span>
-                                                </div>
-                                            </td>
-                                            <td class="font-weight-bold"><%= item.name %></td>
-                                            <td><%= item.api_name %> <%= item.va_type || '' %></td>
-                                            <td>
-                                                <%= item.created_at ? new Date(item.created_at).toLocaleString('id-ID') : '-' %>
-                                            </td>
-                                            <td>
-                                                <%= item.updated_at ? new Date(item.updated_at).toLocaleString('id-ID') : '-' %>
-                                            </td>
-                                            <td class="text-center">
-                                                <span class="badge badge-primary px-2 py-1.5">
-                                                    <%= item.uploaded_count %>
-                                                </span>
-                                            </td>
-                                            <td class="text-center">
-                                                <%= (Number(item.total_file_size) / (1024 * 1024)).toFixed(2) %> MB
-                                            </td>
-                                            <td class="text-nowrap text-center pr-4">
-                                                <a href="/read_data?id=<%= item.id %>" class="btn btn-sm btn-outline-primary mr-1">View</a>
-                                            </td>
-                                        </tr>
-                                    <% }) %>
-                                    <% } %>
+                                    <%- tableRows %>
                                 </tbody>
+                                
                             </table>
                         </div>
                     </div>
