@@ -1,114 +1,139 @@
-.main-doc-item.pagination-hidden {
-    display: none !important;
-}
 
-<script>
-    (() => {
-        "use strict";
+router.get("/", checkAuth, async (req, res) => {
+  try {
+    const queryText = `
+      SELECT
+        i.*,
+        COUNT(d.id)::int AS uploaded_count,
+        COALESCE(SUM(d.file_size), 0)::bigint AS total_file_size
+      FROM upload_document i
+      LEFT JOIN uploaded_documents d
+        ON d.upload_document_id = i.id
+      GROUP BY i.id
+      ORDER BY i.id DESC
+    `;
 
-        const ITEMS_PER_PAGE = 10;
+    const result = await db.query(queryText);
+    const integrations = result.rows;
 
-        let currentPage = 1;
+    // Helper untuk mengamankan teks HTML
+    function escapeHTML(value) {
+      return String(value ?? "").replace(/[&<>"']/g, function (char) {
+        const entities = {
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        };
 
-        const docItems = Array.from(
-            document.querySelectorAll(".main-doc-item")
-        );
+        return entities[char];
+      });
+    }
 
-        const paginationControls = document.getElementById(
-            "documentPaginationControls"
-        );
+    // Menyiapkan HTML tabel
+    let tableRows = "";
 
-        function createPageButton(label, targetPage, disabled = false, active = false) {
-            const li = document.createElement("li");
+    if (integrations.length === 0) {
+      tableRows = `
+        <tr>
+          <td colspan="8" class="p-0 bg-white">
+            <div class="row no-gutters p-4 text-center bg-white text-muted justify-content-center">
+              No integration data available.
+            </div>
+          </td>
+        </tr>
+      `;
+    } else {
+      for (let i = 0; i < integrations.length; i++) {
+        const item = integrations[i];
 
-            li.className = `page-item ${disabled ? "disabled" : ""} ${active ? "active" : ""}`;
+        // Format ukuran dokumen
+        const sizeMB = (
+          Number(item.total_file_size || 0) / (1024 * 1024)
+        ).toFixed(2);
 
-            const link = document.createElement("a");
-            link.className = "page-link";
-            link.href = "#";
-            link.innerHTML = label;
+        // Format tanggal pembuatan
+        let createdAt = "-";
 
-            link.addEventListener("click", function (e) {
-                e.preventDefault();
-
-                if (disabled || targetPage < 1) return;
-
-                currentPage = targetPage;
-
-                renderPagination();
-
-                window.scrollTo({
-                    top: 0,
-                    behavior: "smooth"
-                });
-            });
-
-            li.appendChild(link);
-
-            return li;
+        if (item.created_at) {
+          createdAt = new Date(item.created_at).toLocaleString("id-ID", {
+            timeZone: "Asia/Jakarta",
+          });
         }
 
-        function renderPagination() {
-            const totalItems = docItems.length;
-            const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+        // Format tanggal pembaruan
+        let updatedAt = "-";
 
-            paginationControls.innerHTML = "";
-
-            // Jika tidak ada dokumen
-            if (totalItems === 0) return;
-
-            // Pastikan halaman aktif tidak melebihi jumlah halaman
-            currentPage = Math.min(Math.max(currentPage, 1), totalPages);
-
-            const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-            const endIndex = startIndex + ITEMS_PER_PAGE;
-
-            // Tampilkan hanya 10 dokumen pada halaman aktif
-            docItems.forEach((item, index) => {
-                const isVisible = index >= startIndex && index < endIndex;
-
-                item.classList.toggle(
-                    "pagination-hidden",
-                    !isVisible
-                );
-            });
-
-            // Tidak menampilkan navigasi jika hanya satu halaman
-            if (totalPages <= 1) return;
-
-            // Previous
-            paginationControls.appendChild(
-                createPageButton(
-                    "&laquo;",
-                    currentPage - 1,
-                    currentPage === 1
-                )
-            );
-
-            // Nomor halaman
-            for (let page = 1; page <= totalPages; page++) {
-                paginationControls.appendChild(
-                    createPageButton(
-                        page,
-                        page,
-                        false,
-                        currentPage === page
-                    )
-                );
-            }
-
-            // Next
-            paginationControls.appendChild(
-                createPageButton(
-                    "&raquo;",
-                    currentPage + 1,
-                    currentPage === totalPages
-                )
-            );
+        if (item.updated_at) {
+          updatedAt = new Date(item.updated_at).toLocaleString("id-ID", {
+            timeZone: "Asia/Jakarta",
+          });
         }
 
-        // Inisialisasi
-        renderPagination();
+        // Membuat baris tabel
+        tableRows += `
+          <tr class="align-middle">
+            <td class="pl-4 align-middle" style="width: 90px;">
+              <div class="d-flex align-items-center justify-content-start">
+                <div style="width: 32px;" class="text-left d-flex align-items-center">
+                  <input
+                    class="form-check-input check"
+                    type="checkbox"
+                    id="check_${item.id}"
+                    value="${item.id}"
+                    data-name="${escapeHTML(item.name)}"
+                    style="position: static; margin: 0; flex-shrink: 0;"
+                  >
+                </div>
+                <span class="font-weight-bold text-muted pl-1">
+                  ${i + 1}
+                </span>
+              </div>
+            </td>
 
-    })();
-</script>
+            <td class="font-weight-bold">
+              ${escapeHTML(item.name)}
+            </td>
+
+            <td>
+              ${escapeHTML(item.api_name)} ${escapeHTML(item.va_type || "")}
+            </td>
+
+            <td>${escapeHTML(createdAt)}</td>
+            <td>${escapeHTML(updatedAt)}</td>
+
+            <td class="text-center">
+              <span class="badge badge-primary px-2 py-1">
+                ${Number(item.uploaded_count || 0)}
+              </span>
+            </td>
+
+            <td class="text-center">
+              ${sizeMB} MB
+            </td>
+
+            <td class="text-nowrap text-center pr-4">
+              <a
+                href="/read_data?id=${encodeURIComponent(item.id)}"
+                class="btn btn-sm btn-outline-primary mr-1"
+              >
+                View
+              </a>
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    return res.render("index.ejs", {
+      tableRows: tableRows,
+      message: req.flash("success")[0] || "",
+      errorMessage: req.flash("error")[0] || "",
+    });
+
+  } catch (err) {
+    console.error("GET / error:", err);
+    return res.status(500).send("Gagal mengambil data integrasi.");
+  }
+});
