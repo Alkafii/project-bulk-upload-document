@@ -124,32 +124,19 @@ function flashError(req, res, message, url) {
 
 router.get("/", checkAuth, async (req, res) => {
     try {
-        const result = await db.query(`
-            SELECT
-                i.*,
-                COUNT(d.id)::int AS uploaded_count,
-                COALESCE(SUM(d.file_size), 0)::bigint AS total_file_size
-            FROM upload_document i
-            LEFT JOIN uploaded_documents d
-                ON d.upload_document_id = i.id
-            GROUP BY i.id
-            ORDER BY i.id DESC
-        `);
-
+        const result = await db.query(` SELECT i.*, COUNT(d.id)::int AS uploaded_count, COALESCE(SUM(d.file_size), 0)::bigint AS total_file_size FROM upload_document i LEFT JOIN uploaded_documents d ON d.upload_document_id = i.id GROUP BY i.id ORDER BY i.id DESC `);
         const integrations = result.rows;
 
         let tableRows = "";
 
         if (integrations.length === 0) {
-            tableRows = `
-                <tr>
-                    <td colspan="8" class="p-0 bg-white">
-                        <div class="row no-gutters p-4 text-center bg-white text-muted justify-content-center">
-                            No integration data available.
-                        </div>
-                    </td>
-                </tr>
-            `;
+            tableRows = `<tr>
+                             <td colspan="8" class="p-0 bg-white">
+                                 <div class="row no-gutters p-4 text-center bg-white text-muted justify-content-center">
+                                     No integration data available.
+                                 </div>
+                             </td>
+                         </tr>`;
         } else {
             for (let i = 0; i < integrations.length; i++) {
                 const item = integrations[i];
@@ -163,10 +150,7 @@ router.get("/", checkAuth, async (req, res) => {
 
                 if (item.created_at) {
                     createdAt = new Date(item.created_at).toLocaleString(
-                        "id-ID",
-                        {
-                            timeZone: "Asia/Jakarta"
-                        }
+                        "id-ID", { timeZone: "Asia/Jakarta" }
                     );
                 }
 
@@ -174,77 +158,74 @@ router.get("/", checkAuth, async (req, res) => {
 
                 if (item.updated_at) {
                     updatedAt = new Date(item.updated_at).toLocaleString(
-                        "id-ID",
-                        {
-                            timeZone: "Asia/Jakarta"
-                        }
+                        "id-ID", { timeZone: "Asia/Jakarta" }
                     );
                 }
 
-                tableRows += `
-                    <tr class="align-middle">
-                        <td class="pl-4 align-middle" style="width: 90px;">
-                            <div class="d-flex align-items-center justify-content-start">
-                                <div style="width: 32px;" class="text-left d-flex align-items-center">
-                                    <input
-                                        class="form-check-input check"
-                                        type="checkbox"
-                                        id="check_${item.id}"
-                                        value="${item.id}"
-                                        data-name="${escapeHTML(item.name)}"
-                                        style="position: static; margin: 0; flex-shrink: 0;"
-                                    >
-                                </div>
+                tableRows += `<tr class="align-middle">
+                                  <td class="pl-4 align-middle" style="width: 90px;">
+                                      <div class="d-flex align-items-center justify-content-start">
+                                          <div style="width: 32px;" class="text-left d-flex align-items-center">
+                                              <input
+                                                  class="form-check-input check"
+                                                  type="checkbox"
+                                                  id="check_${item.id}"
+                                                  value="${item.id}"
+                                                  data-name="${escapeHTML(item.name)}"
+                                                  style="position: static; margin: 0; flex-shrink: 0;"
+                                              >
+                                          </div>
 
-                                <span class="font-weight-bold text-muted pl-1">
-                                    ${i + 1}
-                                </span>
-                            </div>
-                        </td>
+                                          <span class="font-weight-bold text-muted pl-1">
+                                              ${i + 1}
+                                          </span>
+                                      </div>
+                                  </td>
 
-                        <td class="font-weight-bold">
-                            ${escapeHTML(item.name)}
-                        </td>
+                                  <td class="font-weight-bold">
+                                      ${escapeHTML(item.name)}
+                                  </td>
 
-                        <td>
-                            ${escapeHTML(item.api_name)} ${escapeHTML(item.va_type || "")}
-                        </td>
+                                  <td>
+                                      ${escapeHTML(item.api_name)} ${escapeHTML(item.va_type || "")}
+                                  </td>
 
-                        <td>${escapeHTML(createdAt)}</td>
-                        <td>${escapeHTML(updatedAt)}</td>
+                                  <td>${escapeHTML(createdAt)}</td>
+                                  <td>${escapeHTML(updatedAt)}</td>
 
-                        <td class="text-center">
-                            <span class="badge badge-primary px-2 py-1">
-                                ${Number(item.uploaded_count || 0)}
-                            </span>
-                        </td>
+                                  <td class="text-center">
+                                      <span class="badge badge-primary px-2 py-1">
+                                          ${Number(item.uploaded_count || 0)}
+                                      </span>
+                                  </td>
 
-                        <td class="text-center">
-                            ${sizeMB} MB
-                        </td>
+                                  <td class="text-center">
+                                      ${sizeMB} MB
+                                  </td>
 
-                        <td class="text-nowrap text-center pr-4">
-                            <a
-                                href="/read_data?id=${encodeURIComponent(item.id)}"
-                                class="btn btn-sm btn-outline-primary mr-1"
-                            >
-                                View
-                            </a>
-                        </td>
-                    </tr>
-                `;
+                                  <td class="text-nowrap text-center pr-4">
+                                      <a
+                                          href="/read_data?id=${encodeURIComponent(item.id)}"
+                                          class="btn btn-sm btn-outline-primary mr-1"
+                                      >
+                                          View
+                                      </a>
+                                  </td>
+                              </tr>`;
             }
         }
 
+        const successMessage = req.flash("success")[0] || "";
+        const errorMessage = req.flash("error")[0] || "";
+
         return res.render("index.ejs", {
             tableRows: tableRows,
-            message: req.flash("success")[0] || "",
-            errorMessage: req.flash("error")[0] || ""
+            successMessage: successMessage,
+            errorMessage: errorMessage
         });
 
     } catch (err) {
         console.error("GET / error:", err);
-
         return res.status(500).send(
             "Gagal mengambil data integrasi."
         );
@@ -275,7 +256,6 @@ router.post(
         let transactionStarted = false;
 
         try {
-            // 1. Ambil dan validasi file
             const files = req.files || [];
 
             validateUploadBatch(files);
@@ -305,7 +285,6 @@ router.post(
                 );
             }
 
-            // 2. Validasi nama dokumen
             const lowerCaseNames = [];
 
             for (const docName of documentNames) {
@@ -327,32 +306,19 @@ router.post(
                 );
             }
 
-            // 3. Buat folder penyimpanan
             await fs.mkdir(folderPath, {
                 recursive: true
             });
 
             folderCreated = true;
 
-            // 4. Mulai transaksi database
             client = await db.connect();
 
             await client.query("BEGIN");
-            transactionStarted = true;
-
-            // 5. Simpan data integrasi
-            const integrationResult = await client.query(
-                `INSERT INTO upload_document
-                    (name, api_name, folder_name, created_at, updated_at)
-                 VALUES
-                    ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                 RETURNING id`,
-                [institution, apiName, folderName]
-            );
-
+            transactio
+            const integrationResult = await client.query( `INSERT INTO upload_document (name, api_name, folder_name, created_at, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id`, [institution, apiName, folderName] );
             const integrationId = integrationResult.rows[0].id;
 
-            // 6. Simpan seluruh dokumen
             for (let i = 0; i < files.length; i++) {
                 const metadata = await writeUploadedFile(
                     files[i],
@@ -367,17 +333,14 @@ router.post(
                 );
             }
 
-            // 7. Commit transaksi
             await client.query("COMMIT");
             transactionStarted = false;
 
-            // 8. Siapkan notifikasi sukses
             const successMessage =
                 `Data integrasi berhasil ditambahkan. ${files.length} dokumen berhasil diunggah.`;
 
             req.flash("success", successMessage);
 
-            // 9. Simpan session sebelum redirect
             if (
                 req.get("X-Requested-With") === "XMLHttpRequest"
             ) {
@@ -401,13 +364,10 @@ router.post(
                 });
             }
 
-            // Untuk request form biasa
             return res.redirect("/");
 
         } catch (err) {
             console.error("POST /upload error:", err);
-
-            // 10. Rollback jika transaksi belum berhasil commit
             if (client && transactionStarted) {
                 await client.query("ROLLBACK").catch(rollbackError => {
                     console.error(
@@ -419,7 +379,6 @@ router.post(
                 transactionStarted = false;
             }
 
-            // 11. Bersihkan folder jika proses upload gagal
             if (folderCreated) {
                 await fs.rm(folderPath, {
                     recursive: true,
@@ -683,7 +642,6 @@ router.get("/update_data", checkAuth, async (req, res) => {
 
     const documents = result.rows;
 
-    // Membuat HTML daftar dokumen
     let documentsHTML = "";
 
     if (documents.length === 0) {
@@ -741,7 +699,6 @@ router.get("/update_data", checkAuth, async (req, res) => {
       }
     }
 
-    // Membuat HTML alert
     let alertHTML = "";
 
     const message = req.flash("success")[0] || "";
@@ -821,21 +778,18 @@ router.post("/update_data",checkAuth,upload.fields([
       const newNames = ensureArray(req.body.newDocumentNames)
         .map(name => text(name, 255));
 
-      // Validasi ID penghapusan
       for (const docId of deleteIds) {
         if (!Number.isInteger(docId) || docId <= 0) {
           throw new Error("ID dokumen yang akan dihapus tidak valid.");
         }
       }
 
-      // Validasi ID penggantian
       for (const docId of replacementIds) {
         if (!Number.isInteger(docId) || docId <= 0) {
           throw new Error("ID dokumen pengganti tidak valid.");
         }
       }
 
-      // Mencegah ID duplikat
       if (new Set(deleteIds).size !== deleteIds.length) {
         throw new Error("Terdapat ID dokumen penghapusan yang duplikat.");
       }
@@ -844,7 +798,6 @@ router.post("/update_data",checkAuth,upload.fields([
         throw new Error("Terdapat ID dokumen pengganti yang duplikat.");
       }
 
-      // Dokumen tidak boleh dihapus dan diganti sekaligus
       for (const docId of replacementIds) {
         if (deleteIds.includes(docId)) {
           throw new Error(
@@ -853,7 +806,6 @@ router.post("/update_data",checkAuth,upload.fields([
         }
       }
 
-      // Validasi jumlah file
       if (replacementIds.length !== replacementFiles.length) {
         throw new Error(
           "Jumlah ID dokumen pengganti tidak sesuai dengan jumlah file."
@@ -866,7 +818,6 @@ router.post("/update_data",checkAuth,upload.fields([
         );
       }
 
-      // Validasi nama dokumen baru
       for (const name of newNames) {
         if (!name) {
           throw new Error("Nama dokumen baru tidak boleh kosong.");
@@ -895,35 +846,21 @@ router.post("/update_data",checkAuth,upload.fields([
               [id, deleteIds]
           );
 
-          // Hitung jumlah dokumen yang benar-benar terhapus
           deletedCount = deleted.rows.length;
 
-          // Simpan nama file untuk dihapus dari storage
-          filesToDelete.push(
-              ...deleted.rows.map(row => row.stored_filename)
-          );
+          filesToDelete.push( ...deleted.rows.map(row => row.stored_filename) );
       }
 
       for (let i = 0; i < replacementFiles.length; i++) {
         const docId = Number(replacementIds[i]);
         if (!Number.isInteger(docId) || docId <= 0) throw new Error("ID dokumen pengganti tidak valid.");
 
-        const old = await client.query(
-          `SELECT stored_filename FROM uploaded_documents
-           WHERE id = $1 AND upload_document_id = $2 FOR UPDATE`,
-          [docId, id]
-        );
+        const old = await client.query( `SELECT stored_filename FROM uploaded_documents WHERE id = $1 AND upload_document_id = $2 FOR UPDATE`, [docId, id] );
         if (!old.rows[0]) throw new Error("Dokumen yang akan diganti tidak ditemukan.");
 
         const metadata = await writeUploadedFile(replacementFiles[i], folderPath);
         filesWritten.push(metadata.stored_filename);
-        await client.query(
-          `UPDATE uploaded_documents
-           SET original_filename = $1, stored_filename = $2,
-               mime_type = $3, file_size = $4, created_at = CURRENT_TIMESTAMP
-           WHERE id = $5 AND upload_document_id = $6`,
-          [metadata.original_filename, metadata.stored_filename, metadata.mime_type, metadata.file_size, docId, id]
-        );
+        await client.query( `UPDATE uploaded_documents SET original_filename = $1, stored_filename = $2, mime_type = $3, file_size = $4, created_at = CURRENT_TIMESTAMP WHERE id = $5 AND upload_document_id = $6`, [metadata.original_filename, metadata.stored_filename, metadata.mime_type, metadata.file_size, docId, id] );
         filesToDelete.push(old.rows[0].stored_filename);
       }
 
@@ -989,12 +926,7 @@ router.get("/delete_file", checkAuth, async (req, res) => {
     const client = await db.connect();
     try {
       await client.query("BEGIN");
-      const result = await client.query(
-        `DELETE FROM uploaded_documents
-         WHERE id = $1 AND upload_document_id = $2
-         RETURNING stored_filename`,
-        [docId, id]
-      );
+      const result = await client.query( `DELETE FROM uploaded_documents WHERE id = $1 AND upload_document_id = $2 RETURNING stored_filename`, [docId, id] );
       if (!result.rows[0]) {
         await client.query("ROLLBACK");
         return res.status(404).send("Dokumen tidak ditemukan.");
