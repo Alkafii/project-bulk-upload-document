@@ -1,3 +1,17 @@
-POST /upload error: ReferenceError: transactio is not defined
-    at file:///D:/17.%20Belajar%20Programming/Latihan%20Programming/Project%20Bulk%20Upload%20FIle/routes/routes.js:318:13
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+client = await db.connect();
+
+// Mulai transaksi database
+await client.query("BEGIN");
+transactionStarted = true;
+
+// Simpan data integrasi
+const integrationResult = await client.query(
+    `INSERT INTO upload_document
+        (name, api_name, folder_name, created_at, updated_at)
+     VALUES
+        ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+     RETURNING id`,
+    [institution, apiName, folderName]
+);
+
+const integrationId = integrationResult.rows[0].id;
