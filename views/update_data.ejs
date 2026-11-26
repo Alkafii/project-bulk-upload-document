@@ -166,9 +166,12 @@
             const allowed = ['pdf', 'doc', 'docx', 'xls', 'xlsx'];
             let added = [];
             let currentMainPage = 1;
+            let currentReviewPage = 1;
             let currentReplacements = [];
 
             const mainItemsPerPage = 10;
+            const reviewItemsPerPage = 10;
+
             const $docItems = $(".main-doc-item");
 
             const fmt = n => (n / 1024 / 1024).toFixed(2) + ' MB';
