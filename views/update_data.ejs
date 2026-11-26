@@ -90,7 +90,7 @@
                     <h3 class="text-primary font-weight-bold mt-3 mb-4">Edit Integration Documents</h3>
                 </div>
 
-                <%= alertHTML %>
+                <%- alertHTML %>
 
                 <form id="editForm" action="/update_data?id=<%= integration.id %>" method="POST" enctype="multipart/form-data">
                     <div class="card border-0 shadow-sm mb-4">
@@ -111,60 +111,8 @@
                                 <%- documentsHTML %>
                             </div>
 
-                            <div id="mainDocListContainer">
-                                <% documents.forEach((doc, index) => { %>
-                                    <div class="doc-row main-doc-item">
-                                        <div class="d-flex align-items-start w-100">
-                                            
-                                            <div class="font-weight-bold text-muted mr-3" style="font-size: 16px; min-width: 25px;">
-                                                <%= index + 1 %>.
-                                            </div>
-
-                                            <div class="flex-fill">
-                                                <div class="d-flex align-items-start w-100 mb-1">
-                                                    <div>
-                                                        <div class="font-weight-bold" style="font-size: 16px;">
-                                                            <%= doc.document_name %>
-                                                        </div>
-                                                        <div class="small text-muted mb-1">
-                                                            <%= doc.original_filename %> · <%= (Number(doc.file_size) / 1024 / 1024).toFixed(2) %> MB
-                                                        </div>
-                                                    </div>
-                                                    
-                                                    <label class="text-danger small mb-0 font-weight-bold d-flex align-items-center ml-auto pt-1" style="cursor: pointer; user-select: none; flex-shrink: 0;">
-                                                        <input type="checkbox" name="deleteDocumentIds" value="<%= doc.id %>" class="delete-doc mr-1" style="cursor: pointer;">Delete
-                                                    </label>
-                                                </div>
-
-                                                <a class="small font-weight-bold d-block mb-3" href="/view_file?documentId=<%= doc.id %>" target="_blank">View Document</a>
-
-                                                <div class="w-100">
-                                                    <label class="small font-weight-bold mb-2 text-dark">Replace (optional)</label>
-                                                    <div class="custom-file w-100" style="cursor: pointer;">
-                                                        <input 
-                                                            type="file" 
-                                                            class="custom-file-input replacement-file" 
-                                                            id="replace_<%= doc.id %>"
-                                                            name="replacementFiles" 
-                                                            data-id="<%= doc.id %>" 
-                                                            accept=".pdf,.doc,.docx,.xls,.xlsx"
-                                                            style="cursor: pointer;"
-                                                            >
-                                                        <label class="custom-file-label small text-muted" for="replace_<%= doc.id %>" style="border-color: #ced4da; background-color: #fff;">
-                                                            Choose file or drag here...
-                                                        </label>
-                                                    </div>  
-                                                    
-                                                </div>
-                                            </div>
-
-                                        </div>
-                                    </div>
-                                <% }) %>
-                            </div>
-
                             <nav class="mt-4">
-                                <ul class="pagination pagination-sm justify-content-center mb-0" id="mainPaginationControls"></ul>
+                                <ul class="pagination pagination-sm justify-content-left mb-0" id="mainPaginationControls"></ul>
                             </nav>
 
                         </div>
