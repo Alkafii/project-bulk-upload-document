@@ -90,13 +90,7 @@
                     <h3 class="text-primary font-weight-bold mt-3 mb-4">Edit Integration Documents</h3>
                 </div>
 
-                <% if (typeof message !== "undefined" && message) { %>
-                    <div class="alert alert-success"><%= message %></div>
-                <% } %>
-
-                <% if (typeof errorMessage !== "undefined" && errorMessage) { %>
-                    <div class="alert alert-danger"><%= errorMessage %></div>
-                <% } %>
+                <%= alertHTML %>
 
                 <form id="editForm" action="/update_data?id=<%= integration.id %>" method="POST" enctype="multipart/form-data">
                     <div class="card border-0 shadow-sm mb-4">
@@ -108,12 +102,14 @@
                         </div>
                     </div>
                     <div class="card border-0 shadow-sm mb-4">
-                        <div class="card-header bg-white font-weight-bold pt-4 px-4 border-0 pb-0">Current Documents (<%= documents.length %>)</div>
+                        <div class="card-header bg-white font-weight-bold pt-4 px-4 border-0 pb-0">
+                            Current Documents (<%= totalDocuments %>)
+                        </div>
                         <div class="card-body p-4 upload-card-body">
 
-                            <% if (!documents.length) { %>
-                                <p class="text-muted text-center py-4">There are no documents yet.</p>
-                            <% } %>
+                            <div id="mainDocListContainer">
+                                <%- documentsHTML %>
+                            </div>
 
                             <div id="mainDocListContainer">
                                 <% documents.forEach((doc, index) => { %>
@@ -158,7 +154,7 @@
                                                             Choose file or drag here...
                                                         </label>
                                                     </div>  
-                                                    <input type="hidden" name="replacementDocumentIds" value="<%= doc.id %>" disabled>
+                                                    
                                                 </div>
                                             </div>
 
@@ -314,8 +310,21 @@
                 if (totalSize > maxTotal || replacements.some(f => f.files[0].size > maxFile)) return alert('Batas ukuran file terlampaui.');
 
                 const data = new FormData(form);
-                data.delete('newDocuments'); data.delete('newDocumentNames');
-                added.forEach(item => { data.append('newDocuments', item.file, item.file.name); data.append('newDocumentNames', item.name); });
+                data.delete('newDocuments');
+                data.delete('newDocumentNames');
+                data.delete('replacementDocumentIds');
+
+                for (const item of added) {
+                    data.append("newDocuments", item.file, item.file.name);
+                    data.append("newDocumentNames", item.name);
+                }
+
+                for (const fileInput of replacements) {
+                    data.append(
+                        "replacementDocumentIds",
+                        fileInput.dataset.id
+                    );
+                }
 
                 save.disabled = true; save.textContent = 'Menyimpan...';
                 fetch(form.action, { method: 'POST', body: data, redirect: 'follow' })
