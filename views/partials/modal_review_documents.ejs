@@ -1,0 +1,72 @@
+<div class="modal fade" id="reviewModal" tabindex="-1" role="dialog" aria-labelledby="reviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 10px;">
+
+            <div class="modal-header">
+                <h5 class="modal-title font-weight-bold text-primary" id="reviewModalLabel">
+                    Review Data
+                </h5>
+
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body py-3 d-flex flex-column" style="height: 530px;">
+
+                <table class="table table-sm table-borderless mb-3 flex-shrink-0">
+                    <tr>
+                        <td class="font-weight-bold p-0" style="width: 150px;">Partner Name</td>
+                        <td class="p-0" style="width: 20px;">:</td>
+                        <td class="p-0" id="reviewPartner"></td>
+                    </tr>
+
+                    <tr>
+                        <td class="font-weight-bold p-0">API Name</td>
+                        <td class="p-0">:</td>
+                        <td class="p-0" id="reviewApi"></td>
+                    </tr>
+
+                    <tr>
+                        <td class="font-weight-bold p-0">Total Size</td>
+                        <td class="p-0" style="width: 20px;">:</td>
+                        <td class="p-0" id="reviewSize"></td>
+                    </tr>
+                </table>
+
+                <h6 class="font-weight-bold text-secondary mt-2 mb-2 flex-shrink-0">
+                    <span id="reviewDocCount"></span>
+                    Documents to be processed:
+                </h6>
+
+                <div class="card border rounded-lg flex-fill overflow-auto mb-3">
+                    <ul class="list-group list-group-flush" id="reviewDocList"></ul>
+                </div>
+
+                <nav class="flex-shrink-0">
+                    <ul class="pagination pagination-sm justify-content-center mb-0" id="reviewPaginationControls"></ul>
+                </nav>
+
+            </div>
+
+            <div class="modal-footer">
+                <button
+                    type="button"
+                    class="btn btn-light font-weight-bold text-secondary"
+                    data-dismiss="modal"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="button"
+                    id="confirmSubmitBtn"
+                    class="btn btn-primary font-weight-bold"
+                >
+                    Confirm
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
