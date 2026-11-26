@@ -676,7 +676,7 @@ router.get("/update_data", checkAuth, async (req, res) => {
                               <div class="flex-fill">
                                 <div class="d-flex align-items-start w-100 mb-1">
                                   <div>
-                                    <div class="font-weight-bold" style="font-size: 16px;">
+                                    <div class="font-weight-bold document-name" style="font-size: 16px;">
                                       ${escapeHTML(doc.document_name)}
                                     </div>
                                     <div class="small text-muted mb-1">

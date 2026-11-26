@@ -1,68 +1,262 @@
-<div class="modal fade" id="reviewModal" tabindex="-1" role="dialog" aria-labelledby="reviewModalLabel" aria-hidden="true">
+<style>
+    #reviewModal .modal-content {
+        border: 0;
+        border-radius: 16px;
+        overflow: hidden;
+    }
+
+    #reviewModal .modal-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid #edf0f4;
+    }
+
+    #reviewModal .modal-body {
+        padding: 22px 24px;
+        max-height: 75vh;
+        overflow-y: auto;
+    }
+
+    #reviewModal .review-info {
+        background: #f8faff;
+        border: 1px solid #e8eef8;
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin-bottom: 18px;
+    }
+
+    #reviewModal .review-info-label {
+        color: #718096;
+        font-size: 12px;
+        margin-bottom: 4px;
+    }
+
+    #reviewModal .review-info-value {
+        color: #26364a;
+        font-weight: 600;
+        overflow-wrap: anywhere;
+    }
+
+    #reviewModal .review-stat {
+        background: #f8faff;
+        border: 1px solid #e8eef8;
+        border-radius: 10px;
+        padding: 12px 15px;
+        height: 100%;
+    }
+
+    #reviewModal .review-stat-label {
+        color: #718096;
+        font-size: 12px;
+        margin-bottom: 4px;
+    }
+
+    #reviewModal .review-stat-value {
+        color: #2563eb;
+        font-size: 19px;
+        font-weight: 700;
+    }
+
+    #reviewModal .review-list {
+        border: 1px solid #e5eaf1;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 0;
+    }
+
+    #reviewModal .review-item {
+        display: flex;
+        align-items: flex-start;
+        padding: 12px 15px;
+        border-bottom: 1px solid #edf0f4;
+        background: #fff;
+    }
+
+    #reviewModal .review-item:last-child {
+        border-bottom: 0;
+    }
+
+    #reviewModal .review-number {
+        width: 27px;
+        height: 27px;
+        min-width: 27px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 7px;
+        background: #edf4ff;
+        color: #2563eb;
+        font-size: 12px;
+        font-weight: 700;
+        margin-right: 12px;
+    }
+
+    #reviewModal .review-document-name {
+        font-size: 14px;
+        font-weight: 700;
+        color: #26364a;
+        overflow-wrap: anywhere;
+    }
+
+    #reviewModal .review-file-name {
+        font-size: 12px;
+        color: #718096;
+        overflow-wrap: anywhere;
+        margin-top: 3px;
+    }
+
+    #reviewModal .review-item-meta {
+        font-size: 11px;
+        color: #718096;
+        margin-top: 5px;
+    }
+
+    #reviewModal .review-type {
+        display: inline-block;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 4px 8px;
+        border-radius: 20px;
+        background: #edf4ff;
+        color: #2563eb;
+        white-space: nowrap;
+    }
+
+    #reviewModal .review-type.replacement {
+        background: #fff5e8;
+        color: #b7791f;
+    }
+
+    #reviewModal .review-pagination {
+        margin-top: 16px;
+    }
+
+    #reviewModal .modal-footer {
+        padding: 15px 24px;
+        border-top: 1px solid #edf0f4;
+    }
+
+    @media (max-width: 576px) {
+        #reviewModal .modal-dialog {
+            margin: 10px;
+        }
+
+        #reviewModal .modal-header {
+            padding: 16px;
+        }
+
+        #reviewModal .modal-body {
+            padding: 16px;
+            max-height: 75vh;
+        }
+
+        #reviewModal .modal-footer {
+            padding: 12px 16px;
+        }
+
+        #reviewModal .review-item {
+            padding: 11px;
+        }
+
+        #reviewModal .review-type {
+            margin-top: 7px;
+        }
+    }
+</style>
+
+<div class="modal fade" id="reviewModal"
+     tabindex="-1" role="dialog"
+     aria-labelledby="reviewModalLabel"
+     aria-hidden="true">
+
     <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 10px;">
+        <div class="modal-content shadow-lg">
 
             <div class="modal-header">
-                <h5 class="modal-title font-weight-bold text-primary" id="reviewModalLabel">
-                    Review Data
-                </h5>
+                <div>
+                    <h5 class="modal-title font-weight-bold text-primary mb-1"
+                        id="reviewModalLabel">
+                        Review Dokumen
+                    </h5>
 
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <small class="text-muted">
+                        Periksa kembali dokumen sebelum menyimpan perubahan.
+                    </small>
+                </div>
+
+                <button type="button" class="close"
+                        data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
 
-            <div class="modal-body py-3 d-flex flex-column" style="height: 530px;">
+            <div class="modal-body">
 
-                <table class="table table-sm table-borderless mb-3 flex-shrink-0">
-                    <tr>
-                        <td class="font-weight-bold p-0" style="width: 150px;">Partner Name</td>
-                        <td class="p-0" style="width: 20px;">:</td>
-                        <td class="p-0" id="reviewPartner"></td>
-                    </tr>
+                <div class="review-info">
+                    <div class="row">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <div class="review-info-label">Partner Name</div>
+                            <div class="review-info-value" id="reviewPartner">-</div>
+                        </div>
 
-                    <tr>
-                        <td class="font-weight-bold p-0">API Name</td>
-                        <td class="p-0">:</td>
-                        <td class="p-0" id="reviewApi"></td>
-                    </tr>
-
-                    <tr>
-                        <td class="font-weight-bold p-0">Total Size</td>
-                        <td class="p-0" style="width: 20px;">:</td>
-                        <td class="p-0" id="reviewSize"></td>
-                    </tr>
-                </table>
-
-                <h6 class="font-weight-bold text-secondary mt-2 mb-2 flex-shrink-0">
-                    <span id="reviewDocCount"></span>
-                    Documents to be processed:
-                </h6>
-
-                <div class="card border rounded-lg flex-fill overflow-auto mb-3">
-                    <ul class="list-group list-group-flush" id="reviewDocList"></ul>
+                        <div class="col-md-6">
+                            <div class="review-info-label">API Name</div>
+                            <div class="review-info-value" id="reviewApi">-</div>
+                        </div>
+                    </div>
                 </div>
 
-                <nav class="flex-shrink-0">
-                    <ul class="pagination pagination-sm justify-content-center mb-0" id="reviewPaginationControls"></ul>
+                <div class="row mb-4">
+                    <div class="col-6">
+                        <div class="review-stat">
+                            <div class="review-stat-label">Total Dokumen</div>
+                            <div class="review-stat-value">
+                                <span id="reviewDocCount">0</span>
+                                <small style="font-size: 12px; color: #718096;">
+                                    file
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-6">
+                        <div class="review-stat">
+                            <div class="review-stat-label">Total Ukuran</div>
+                            <div class="review-stat-value" id="reviewSize">
+                                0 MB
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="font-weight-bold mb-0">
+                        Daftar Dokumen
+                    </h6>
+
+                    <small class="text-muted" id="reviewPageInfo"></small>
+                </div>
+
+                <ul class="list-unstyled review-list" id="reviewDocList">
+                </ul>
+
+                <nav class="review-pagination" id="reviewPaginationContainer">
+                    <ul class="pagination pagination-sm justify-content-center mb-0"
+                        id="reviewPaginationControls">
+                    </ul>
                 </nav>
 
             </div>
 
             <div class="modal-footer">
-                <button
-                    type="button"
-                    class="btn btn-light font-weight-bold text-secondary"
-                    data-dismiss="modal"
-                >
+                <button type="button"
+                        class="btn btn-light font-weight-bold text-secondary"
+                        data-dismiss="modal">
                     Cancel
                 </button>
 
-                <button
-                    type="button"
-                    id="confirmSubmitBtn"
-                    class="btn btn-primary font-weight-bold"
-                >
+                <button type="button"
+                        id="confirmSubmitBtn"
+                        class="btn btn-primary font-weight-bold px-4">
                     Confirm
                 </button>
             </div>

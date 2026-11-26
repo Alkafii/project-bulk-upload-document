@@ -146,7 +146,7 @@
         modalMessage: 'Are you sure you want to delete the following documents?',
         listId: 'deleteDocumentsList',
         confirmId: 'confirmDeleteDocumentsBtn',
-        confirmLabel: 'Confirm Delete'
+        confirmLabel: 'Delete'
     }) %>
 
     <%- include('./partials/modal_review_documents.ejs') %>
@@ -164,8 +164,12 @@
 
             const maxFile = Number('<%= maxMB * 1024 * 1024 %>'), maxTotal = Number('<%= maxTotalMB * 1024 * 1024 %>'), maxFiles = Number('<%= maxFiles %>');
             const allowed = ['pdf', 'doc', 'docx', 'xls', 'xlsx'];
-            let added = [], currentMainPage = 1;
-            const mainItemsPerPage = 10, $docItems = $('.main-doc-item');
+            let added = [];
+            let currentMainPage = 1;
+            let currentReplacements = [];
+
+            const mainItemsPerPage = 10;
+            const $docItems = $(".main-doc-item");
 
             const fmt = n => (n / 1024 / 1024).toFixed(2) + ' MB';
             const nameOf = f => f.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim();
@@ -212,7 +216,6 @@
             });
 
             let currentDeleteIds = [];
-            let currentReplacements = [];
 
             function submitUpdateData() {
                 const data = new FormData(form);
@@ -270,8 +273,7 @@
             }
 
             function showReviewModal() {
-                currentMainPage = 1;
-
+                currentReviewPage = 1;
                 $("#reviewPartner").text(
                     form.querySelector('[name="institutionName"]').value.trim()
                 );
@@ -281,7 +283,6 @@
                 );
 
                 renderModalDocuments();
-
                 $("#reviewModal").modal("show");
             }
 
@@ -339,7 +340,14 @@
 
                     for (const checkbox of deletes) {
                         const docRow = checkbox.closest(".main-doc-item");
-                        const docName = docRow.querySelector(".font-weight-bold").textContent.trim();
+
+                        const nameElement = docRow.querySelector(".document-name");
+
+                        let docName = "Nama dokumen tidak ditemukan";
+
+                        if (nameElement) {
+                            docName = nameElement.textContent.trim();
+                        }
 
                         $("<li>")
                             .text(docName)
@@ -400,159 +408,240 @@
             }
 
             renderMainPagePagination();
-        })();
 
-        let currentReviewPage = 1;
-        const reviewItemsPerPage = 10;
+            function renderModalDocuments() {
+                const reviewDocList = $("#reviewDocList");
+                const paginationControls = $("#reviewPaginationControls");
 
-        function renderModalDocuments() {
-            const reviewDocList = $("#reviewDocList");
-            const paginationControls = $("#reviewPaginationControls");
+                reviewDocList.empty();
+                paginationControls.empty();
 
-            reviewDocList.empty();
-            paginationControls.empty();
+                let reviewDocuments = [];
+                let totalSize = 0;
 
-            let reviewDocuments = [];
-            let totalSize = 0;
+                // 1. Ambil dokumen baru
+                for (const item of added) {
+                    reviewDocuments.push({
+                        name: item.name,
+                        fileName: item.file.name,
+                        size: item.file.size,
+                        type: "Dokumen Baru"
+                    });
 
-            // 1. Masukkan dokumen baru yang akan ditambahkan
-            for (const item of added) {
-                let documentData = {
-                    name: item.name,
-                    fileName: item.file.name,
-                    size: item.file.size,
-                    type: "Dokumen Baru"
-                };
+                    totalSize += item.file.size;
+                }
 
-                reviewDocuments.push(documentData);
-                totalSize = totalSize + item.file.size;
-            }
+                // 2. Ambil dokumen pengganti
+                const replacementInputs = document.querySelectorAll(".replacement-file");
 
-            // 2. Masukkan dokumen yang akan diganti
-            const replacementInputs = document.querySelectorAll(".replacement-file");
+                for (const fileInput of replacementInputs) {
+                    if (fileInput.files.length > 0) {
+                        const file = fileInput.files[0];
+                        const docRow = fileInput.closest(".main-doc-item");
 
-            for (const input of replacementInputs) {
-                if (input.files.length > 0) {
-                    const file = input.files[0];
-                    const docRow = input.closest(".main-doc-item");
+                        let documentName = "Dokumen";
 
-                    let documentName = "Dokumen";
+                        if (docRow) {
+                            const nameElement = docRow.querySelector(".document-name");
 
-                    if (docRow) {
-                        const nameElement = docRow.querySelector(".font-weight-bold");
-
-                        if (nameElement) {
-                            documentName = nameElement.textContent.trim();
+                            if (nameElement) {
+                                documentName = nameElement.textContent.trim();
+                            }
                         }
+
+                        reviewDocuments.push({
+                            name: documentName,
+                            fileName: file.name,
+                            size: file.size,
+                            type: "Penggantian Dokumen"
+                        });
+
+                        totalSize += file.size;
+                    }
+                }
+
+                // 3. Tampilkan ringkasan
+                $("#reviewDocCount").text(reviewDocuments.length);
+                $("#reviewSize").text(fmt(totalSize));
+
+                // 4. Jika tidak ada dokumen
+                if (reviewDocuments.length === 0) {
+                    const emptyItem = $("<li>")
+                        .addClass("text-center text-muted p-4")
+                        .text("Tidak ada dokumen untuk diproses.");
+
+                    reviewDocList.append(emptyItem);
+                    $("#reviewPageInfo").text("");
+                    $("#reviewPaginationContainer").hide();
+
+                    return;
+                }
+
+                // 5. Hitung pagination
+                const totalPages = Math.ceil(
+                    reviewDocuments.length / reviewItemsPerPage
+                );
+
+                if (currentReviewPage > totalPages) {
+                    currentReviewPage = totalPages;
+                }
+
+                if (currentReviewPage < 1) {
+                    currentReviewPage = 1;
+                }
+
+                const startIndex = (currentReviewPage - 1) * reviewItemsPerPage;
+                const endIndex = startIndex + reviewItemsPerPage;
+
+                const visibleDocuments = reviewDocuments.slice(startIndex, endIndex);
+
+                // 6. Tampilkan informasi halaman
+                $("#reviewPageInfo").text(
+                    "Menampilkan " +
+                    (startIndex + 1) +
+                    "-" +
+                    Math.min(endIndex, reviewDocuments.length) +
+                    " dari " +
+                    reviewDocuments.length +
+                    " dokumen"
+                );
+
+                // 7. Tampilkan dokumen
+                for (let i = 0; i < visibleDocuments.length; i++) {
+                    const documentData = visibleDocuments[i];
+                    const documentNumber = startIndex + i + 1;
+
+                    const listItem = $("<li>").addClass("review-item");
+
+                    const number = $("<div>")
+                        .addClass("review-number")
+                        .text(documentNumber);
+
+                    const content = $("<div>")
+                        .addClass("flex-fill");
+
+                    const documentName = $("<div>")
+                        .addClass("review-document-name")
+                        .text(documentData.name);
+
+                    const fileName = $("<div>")
+                        .addClass("review-file-name")
+                        .text(documentData.fileName);
+
+                    const metadata = $("<div>")
+                        .addClass("review-item-meta")
+                        .text(fmt(documentData.size));
+
+                    const type = $("<span>")
+                        .addClass("review-type");
+
+                    if (documentData.type === "Penggantian Dokumen") {
+                        type.addClass("replacement");
                     }
 
-                    let documentData = {
-                        name: documentName,
-                        fileName: file.name,
-                        size: file.size,
-                        type: "Penggantian Dokumen"
-                    };
+                    type.text(documentData.type);
 
-                    reviewDocuments.push(documentData);
-                    totalSize = totalSize + file.size;
+                    content.append(documentName);
+                    content.append(fileName);
+                    content.append(metadata);
+
+                    const rightContent = $("<div>")
+                        .addClass("ml-3 text-right");
+
+                    rightContent.append(type);
+
+                    listItem.append(number);
+                    listItem.append(content);
+                    listItem.append(rightContent);
+
+                    reviewDocList.append(listItem);
                 }
-            }
 
-            // 3. Tampilkan jumlah dokumen dan total ukuran
-            $("#reviewDocCount").text(reviewDocuments.length);
-            $("#reviewSize").text(fmt(totalSize));
+                // 8. Pagination hanya muncul jika lebih dari 10 dokumen
+                if (totalPages <= 1) {
+                    $("#reviewPaginationContainer").hide();
+                    return;
+                }
 
-            // 4. Jika tidak ada dokumen baru atau penggantian
-            if (reviewDocuments.length === 0) {
-                reviewDocList.append(
-                    $("<li>").text("Tidak ada dokumen baru atau penggantian dokumen.")
-                );
-                return;
-            }
+                $("#reviewPaginationContainer").show();
 
-            // 5. Hitung halaman pagination
-            const totalPages = Math.ceil(
-                reviewDocuments.length / reviewItemsPerPage
-            );
+                // Tombol Previous
+                const previousItem = $("<li>")
+                    .addClass("page-item");
 
-            if (currentReviewPage > totalPages) {
-                currentReviewPage = totalPages;
-            }
+                const previousButton = $("<a>")
+                    .addClass("page-link")
+                    .attr("href", "#")
+                    .text("Previous");
 
-            if (currentReviewPage < 1) {
-                currentReviewPage = 1;
-            }
+                if (currentReviewPage === 1) {
+                    previousItem.addClass("disabled");
+                }
 
-            const startIndex = (currentReviewPage - 1) * reviewItemsPerPage;
-            const endIndex = startIndex + reviewItemsPerPage;
+                previousButton.on("click", function (event) {
+                    event.preventDefault();
 
-            const visibleDocuments = reviewDocuments.slice(startIndex, endIndex);
-
-            // 6. Tampilkan dokumen sesuai halaman
-            for (const documentData of visibleDocuments) {
-                const listItem = $("<li>").addClass("mb-2");
-
-                const documentName = $("<div>")
-                    .addClass("font-weight-bold")
-                    .text(documentData.name);
-
-                const fileName = $("<small>")
-                    .addClass("text-muted d-block")
-                    .text(documentData.fileName);
-
-                const documentInfo = $("<small>")
-                    .addClass("text-secondary d-block")
-                    .text(
-                        documentData.type + " • " + fmt(documentData.size)
-                    );
-
-                listItem.append(documentName);
-                listItem.append(fileName);
-                listItem.append(documentInfo);
-
-                reviewDocList.append(listItem);
-            }
-
-            // 7. Buat tombol pagination jika lebih dari satu halaman
-            if (totalPages > 1) {
-                const previousButton = $("<button>")
-                    .attr("type", "button")
-                    .addClass("btn btn-sm btn-outline-primary mr-2")
-                    .text("Previous")
-                    .prop("disabled", currentReviewPage === 1);
-
-                previousButton.on("click", function () {
                     if (currentReviewPage > 1) {
                         currentReviewPage--;
                         renderModalDocuments();
                     }
                 });
 
-                paginationControls.append(previousButton);
+                previousItem.append(previousButton);
+                paginationControls.append(previousItem);
 
-                const pageInfo = $("<span>")
-                    .addClass("small text-muted")
-                    .text("Halaman " + currentReviewPage + " dari " + totalPages);
+                // Nomor halaman
+                for (let page = 1; page <= totalPages; page++) {
+                    const pageItem = $("<li>")
+                        .addClass("page-item");
 
-                paginationControls.append(pageInfo);
+                    const pageButton = $("<a>")
+                        .addClass("page-link")
+                        .attr("href", "#")
+                        .text(page);
 
-                const nextButton = $("<button>")
-                    .attr("type", "button")
-                    .addClass("btn btn-sm btn-outline-primary ml-2")
-                    .text("Next")
-                    .prop("disabled", currentReviewPage === totalPages);
+                    if (page === currentReviewPage) {
+                        pageItem.addClass("active");
+                    }
 
-                nextButton.on("click", function () {
+                    pageButton.on("click", function (event) {
+                        event.preventDefault();
+
+                        currentReviewPage = page;
+                        renderModalDocuments();
+                    });
+
+                    pageItem.append(pageButton);
+                    paginationControls.append(pageItem);
+                }
+
+                // Tombol Next
+                const nextItem = $("<li>")
+                    .addClass("page-item");
+
+                const nextButton = $("<a>")
+                    .addClass("page-link")
+                    .attr("href", "#")
+                    .text("Next");
+
+                if (currentReviewPage === totalPages) {
+                    nextItem.addClass("disabled");
+                }
+
+                nextButton.on("click", function (event) {
+                    event.preventDefault();
+
                     if (currentReviewPage < totalPages) {
                         currentReviewPage++;
                         renderModalDocuments();
                     }
                 });
 
-                paginationControls.append(nextButton);
+                nextItem.append(nextButton);
+                paginationControls.append(nextItem);
             }
-        }
+        })();
     </script>
-
+    
 </body>
 </html>
