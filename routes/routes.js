@@ -309,7 +309,7 @@ router.get("/update_data", checkAuth, async (req, res) => {
        ORDER BY id ASC`,
       [id]
     );
-
+    
     res.render("update_data.ejs", {
       integration,
       documents: docs.rows,

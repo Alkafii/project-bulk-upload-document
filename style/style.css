@@ -100,3 +100,131 @@
     padding: 16px !important;
   }
 }
+
+/* --- Style Tambahan Halaman Edit Integration --- */
+.upload-page {
+    min-height: 100vh;
+}
+
+.upload-container {
+    max-width: 1050px;
+    width: 100%;
+}
+
+.upload-container {
+    max-width: 100%;
+}
+
+@media (max-width: 768px) {
+    .upload-page main {
+        padding: 16px !important;
+    }
+
+    .upload-container {
+        padding-left: 0;
+        padding-right: 0;
+    }
+}
+
+@media (max-width: 576px) {
+    .upload-card-body {
+        padding: 16px !important;
+    }
+
+    .upload-actions {
+        flex-wrap: wrap;
+    }
+}
+
+.upload-page {
+      min-height: 100vh;
+    }
+
+    .upload-container {
+      max-width: 1050px;
+    }
+
+    .dropzone {
+      border: 2px dashed #9bb8df;
+      border-radius: 12px;
+      background: #f7faff;
+      padding: 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: background-color .2s ease, border-color .2s ease;
+    }
+
+    .dropzone:hover,
+    .dropzone.drag {
+      background: #eaf2ff;
+      border-color: #2563eb;
+    }
+
+    .dropzone:focus {
+      outline: 3px solid rgba(37, 99, 235, .2);
+      outline-offset: 2px;
+    }
+
+    .file-row {
+      border: 1px solid #e2e8f0;
+      border-radius: 9px;
+      padding: 14px;
+      margin-bottom: 10px;
+      background: #fff;
+    }
+
+    .file-name {
+      font-size: 13px;
+      color: #64748b;
+      word-break: break-word;
+    }
+
+    #fileCount {
+      white-space: nowrap;
+    }
+
+    #submitBtn:disabled {
+      cursor: not-allowed;
+      opacity: .65;
+    }
+
+    .upload-container {
+      max-width: 100%;
+    }
+
+    @media (max-width: 768px) {
+      .upload-page main {
+        padding: 16px !important;
+      }
+
+      .upload-container {
+        padding-left: 0;
+        padding-right: 0;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .upload-card-body {
+        padding: 16px !important;
+      }
+
+      .dropzone {
+        padding: 24px 14px;
+      }
+
+      .file-row {
+        padding: 12px;
+      }
+
+      .file-row .d-flex {
+        gap: 10px;
+      }
+
+      .file-row .remove-file {
+        flex-shrink: 0;
+      }
+
+      .upload-actions {
+        flex-wrap: wrap;
+      }
+    }
