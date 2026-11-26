@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Detail Integration</title>
+    <title>Detail Integration Documents</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
     <style>
         .upload-page {
@@ -17,6 +17,10 @@
 
         .upload-container {
             max-width: 100%;
+        }
+
+        .main-doc-item.pagination-hidden {
+            display: none !important;
         }
 
         @media (max-width: 768px) {
@@ -46,7 +50,7 @@
                 <div class="sticky-top bg-light py-3 px-2 mb-4" style="z-index: 1020">
                     <a href="/" class="font-weight-bold">‹ Back</a>
                     <div class="d-flex justify-content-between align-items-center mt-3">
-                        <h3 class="text-primary font-weight-bold mb-0">Detail Integration</h3>
+                        <h3 class="text-primary font-weight-bold mb-0">Detail Integration Documents</h3>
                         <a class="btn btn-primary" href="/update_data?id=<%= integration.id %>">
                             Edit
                         </a>
@@ -152,69 +156,77 @@
         (() => {
             "use strict";
 
+            const ITEMS_PER_PAGE = 10;
+
             let currentPage = 1;
 
-            const itemsPerPage = 10;
-            const docItems = document.querySelectorAll(".main-doc-item");
-            const paginationControls = document.getElementById("documentPaginationControls");
+            const docItems = Array.from(
+                document.querySelectorAll(".main-doc-item")
+            );
+
+            const paginationControls = document.getElementById(
+                "documentPaginationControls"
+            );
+
+            function createPageButton(label, targetPage, disabled = false, active = false) {
+                const li = document.createElement("li");
+
+                li.className = `page-item ${disabled ? "disabled" : ""} ${active ? "active" : ""}`;
+
+                const link = document.createElement("a");
+                link.className = "page-link";
+                link.href = "#";
+                link.innerHTML = label;
+
+                link.addEventListener("click", function (e) {
+                    e.preventDefault();
+
+                    if (disabled || targetPage < 1) return;
+
+                    currentPage = targetPage;
+
+                    renderPagination();
+
+                    window.scrollTo({
+                        top: 0,
+                        behavior: "smooth"
+                    });
+                });
+
+                li.appendChild(link);
+
+                return li;
+            }
 
             function renderPagination() {
                 const totalItems = docItems.length;
-                const totalPages = Math.ceil(totalItems / itemsPerPage);
+                const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
                 paginationControls.innerHTML = "";
 
+                // Jika tidak ada dokumen
                 if (totalItems === 0) return;
 
-                const startIndex = (currentPage - 1) * itemsPerPage;
-                const endIndex = startIndex + itemsPerPage;
+                // Pastikan halaman aktif tidak melebihi jumlah halaman
+                currentPage = Math.min(Math.max(currentPage, 1), totalPages);
 
-                // Sembunyikan seluruh dokumen terlebih dahulu
-                docItems.forEach(item => {
-                    item.style.display = "none";
+                const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+                const endIndex = startIndex + ITEMS_PER_PAGE;
+
+                // Tampilkan hanya 10 dokumen pada halaman aktif
+                docItems.forEach((item, index) => {
+                    const isVisible = index >= startIndex && index < endIndex;
+
+                    item.classList.toggle(
+                        "pagination-hidden",
+                        !isVisible
+                    );
                 });
 
-                // Tampilkan maksimal 10 dokumen sesuai halaman
-                Array.from(docItems)
-                    .slice(startIndex, endIndex)
-                    .forEach(item => {
-                        item.style.display = "";
-                    });
-
-                // Tidak perlu pagination jika hanya ada satu halaman
+                // Tidak menampilkan navigasi jika hanya satu halaman
                 if (totalPages <= 1) return;
 
-                function createPageButton(label, targetPage, disabled = false, active = false) {
-                    const li = document.createElement("li");
-
-                    li.className = `page-item ${disabled ? "disabled" : ""} ${active ? "active" : ""}`;
-
-                    const link = document.createElement("a");
-                    link.className = "page-link";
-                    link.href = "#";
-                    link.innerHTML = label;
-
-                    link.addEventListener("click", function (e) {
-                        e.preventDefault();
-
-                        if (disabled) return;
-
-                        currentPage = targetPage;
-
-                        renderPagination();
-
-                        window.scrollTo({
-                            top: 0,
-                            behavior: "smooth"
-                        });
-                    });
-
-                    li.appendChild(link);
-
-                    return li;
-                }
-
-                // Tombol Previous
+                // Previous
                 paginationControls.appendChild(
                     createPageButton(
                         "&laquo;",
@@ -224,18 +236,18 @@
                 );
 
                 // Nomor halaman
-                for (let i = 1; i <= totalPages; i++) {
+                for (let page = 1; page <= totalPages; page++) {
                     paginationControls.appendChild(
                         createPageButton(
-                            i,
-                            i,
+                            page,
+                            page,
                             false,
-                            currentPage === i
+                            currentPage === page
                         )
                     );
                 }
 
-                // Tombol Next
+                // Next
                 paginationControls.appendChild(
                     createPageButton(
                         "&raquo;",
@@ -245,10 +257,11 @@
                 );
             }
 
-            // Jalankan pagination saat halaman pertama kali dibuka
+            // Inisialisasi
             renderPagination();
 
         })();
     </script>
+
 </body>
 </html>
