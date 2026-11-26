@@ -22,23 +22,8 @@
                 </div>
 
                 <div class="py-2 px-0 w-100 overflow-visible">
-                    <% if (typeof message !== 'undefined' && message) { %>
-                    <div class="alert alert-success alert-dismissible fade show w-100 text-center mb-4 shadow-sm" role="alert">
-                        <strong><%= message %></strong>
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close" style="outline: none;">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                    <% } %>
 
-                    <% if (typeof errorMessage !== 'undefined' && errorMessage) { %>
-                    <div class="alert alert-danger alert-dismissible fade show w-100 text-center mb-4 shadow-sm" role="alert">
-                        <strong><%= errorMessage %></strong>
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close" style="outline: none;">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                    <% } %>
+                    <%- include('./partials/alerts.ejs') %>
 
                     <div class="card border-0 shadow-sm w-100 rounded-lg overflow-hidden">
                         <div class="table-responsive">
@@ -64,7 +49,7 @@
                                 <tbody>
                                     <%- tableRows %>
                                 </tbody>
-                                
+
                             </table>
                         </div>
                     </div>

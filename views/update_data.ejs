@@ -90,7 +90,7 @@
                     <h3 class="text-primary font-weight-bold mt-3 mb-4">Edit Integration Documents</h3>
                 </div>
 
-                <%- alertHTML %>
+                <%- include('./partials/alerts.ejs') %>
 
                 <form id="editForm" action="/update_data?id=<%= integration.id %>" method="POST" enctype="multipart/form-data">
                     <div class="card border-0 shadow-sm mb-4">

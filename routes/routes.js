@@ -216,11 +216,10 @@ router.get("/", checkAuth, async (req, res) => {
     }
 
     return res.render("index.ejs", {
-      tableRows: tableRows,
-      message: req.flash("success")[0] || "",
-      errorMessage: req.flash("error")[0] || "",
+        tableRows: tableRows,
+        successMessage: req.flash("success")[0] || "",
+        errorMessage: req.flash("error")[0] || ""
     });
-
   } catch (err) {
     console.error("GET / error:", err);
     return res.status(500).send("Gagal mengambil data integrasi.");
@@ -229,13 +228,13 @@ router.get("/", checkAuth, async (req, res) => {
 
 
 router.get("/upload", checkAuth, (req, res) => {
-  res.render("upload.ejs", {
-    maxMB: MAX_MB,
-    maxFiles: MAX_FILES,
-    maxTotalMB: MAX_TOTAL_MB,
-    message: req.flash("success")[0] || "",
-    errorMessage: req.flash("error")[0] || ""
-  });
+    res.render("upload.ejs", {
+        maxMB: MAX_MB,
+        maxFiles: MAX_FILES,
+        maxTotalMB: MAX_TOTAL_MB,
+        successMessage: req.flash("success")[0] || "",
+        errorMessage: req.flash("error")[0] || ""
+    });
 });
 
 router.post("/upload", checkAuth, upload.array("documents", MAX_FILES), async (req, res) => {
@@ -296,7 +295,12 @@ router.post("/upload", checkAuth, upload.array("documents", MAX_FILES), async (r
     }
 
     await client.query("COMMIT");
-    req.flash("success", `${files.length} dokumen berhasil diunggah.`);
+
+    req.flash(
+        "success",
+        `Data integrasi berhasil ditambahkan. ${files.length} dokumen berhasil diunggah.`
+    );
+
     return res.redirect("/");
 
   } catch (err) {
@@ -454,32 +458,15 @@ router.get("/read_data", checkAuth, async (req, res) => {
       `;
     }
 
-    let alertHTML = "";
-
-    const message = req.flash("success")[0] || "";
-    const errorMessage = req.flash("error")[0] || "";
-
-    if (message) {
-      alertHTML += `<div class="alert alert-success">
-                      ${escapeHTML(message)}
-                    </div>`;
-    }
-
-    if (errorMessage) {
-      alertHTML += `<div class="alert alert-danger">
-                      ${escapeHTML(errorMessage)}
-                    </div>`;
-    }
-
     return res.render("read_data.ejs", {
-      integration,
-      totalDocuments,
-      totalSize,
-      documentsHTML,
-      paginationHTML,
-      alertHTML
+        integration,
+        totalDocuments,
+        totalSize,
+        documentsHTML,
+        paginationHTML,
+        successMessage: req.flash("success")[0] || "",
+        errorMessage: req.flash("error")[0] || ""
     });
-
   } catch (err) {
     console.error("GET /read_data error:", err);
     return res.status(500).send("Gagal membaca data integrasi.");
@@ -634,13 +621,14 @@ router.get("/update_data", checkAuth, async (req, res) => {
     }
 
     return res.render("update_data.ejs", {
-      integration,
-      totalDocuments: documents.length,
-      documentsHTML,
-      alertHTML,
-      maxMB: MAX_MB,
-      maxFiles: MAX_FILES,
-      maxTotalMB: MAX_TOTAL_MB,
+        integration,
+        totalDocuments: documents.length,
+        documentsHTML,
+        successMessage: req.flash("success")[0] || "",
+        errorMessage: req.flash("error")[0] || "",
+        maxMB: MAX_MB,
+        maxFiles: MAX_FILES,
+        maxTotalMB: MAX_TOTAL_MB
     });
   } catch (err) {
     console.error("GET /update_data error:", err);

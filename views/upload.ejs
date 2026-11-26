@@ -115,19 +115,8 @@
         </div>
 
         <div id="flashContainer">
-          <% if (typeof message !== "undefined" && message) { %>
-            <div class="alert alert-success">
-              <%= message %>
-            </div>
-          <% } %>
-
-          <% if (typeof errorMessage !== "undefined" && errorMessage) { %>
-            <div class="alert alert-danger">
-              <%= errorMessage %>
-            </div>
-          <% } %>
+            <%- include('./partials/alerts.ejs') %>
         </div>
-
 
         <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data" class="card shadow-sm border-0" >
           <div class="card-body p-4 upload-card-body">
