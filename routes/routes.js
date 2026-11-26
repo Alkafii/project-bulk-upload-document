@@ -285,25 +285,12 @@ router.post(
                 );
             }
 
-            const lowerCaseNames = [];
-
             for (const docName of documentNames) {
                 if (!docName) {
                     throw new Error(
                         "Nama dokumen tidak boleh kosong."
                     );
                 }
-
-                lowerCaseNames.push(docName.toLowerCase());
-            }
-
-            if (
-                new Set(lowerCaseNames).size !==
-                lowerCaseNames.length
-            ) {
-                throw new Error(
-                    "Nama dokumen di dalam daftar tidak boleh ada yang sama."
-                );
             }
 
             await fs.mkdir(folderPath, {
