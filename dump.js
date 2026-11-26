@@ -163,104 +163,156 @@ modal_review_documents.ejs
 
 
 
+let currentReviewPage = 1;
+const reviewItemsPerPage = 10;
+
 function renderModalDocuments() {
-    const docList = $("#reviewDocList").empty();
-    const controls = $("#reviewPaginationControls").empty();
+    const reviewDocList = $("#reviewDocList");
+    const paginationControls = $("#reviewPaginationControls");
 
-    const reviewItems = [];
+    reviewDocList.empty();
+    paginationControls.empty();
 
-    // Dokumen baru
-    for (const item of added) {
-        reviewItems.push({
-            name: item.name,
-            size: item.file.size
-        });
-    }
-
-    // Dokumen pengganti
-    const replacements = Array.from(
-        document.querySelectorAll(".replacement-file")
-    ).filter(fileInput => fileInput.files.length > 0);
-
-    for (const fileInput of replacements) {
-        const file = fileInput.files[0];
-
-        reviewItems.push({
-            name: file.name,
-            size: file.size
-        });
-    }
-
-    $("#reviewDocCount").text(reviewItems.length);
-
+    let reviewDocuments = [];
     let totalSize = 0;
 
-    for (const item of reviewItems) {
-        totalSize += item.size;
+    // 1. Masukkan dokumen baru yang akan ditambahkan
+    for (const item of added) {
+        let documentData = {
+            name: item.name,
+            fileName: item.file.name,
+            size: item.file.size,
+            type: "Dokumen Baru"
+        };
+
+        reviewDocuments.push(documentData);
+        totalSize = totalSize + item.file.size;
     }
 
-    $("#reviewSize").text(fmt(totalSize));
+    // 2. Masukkan dokumen yang akan diganti
+    const replacementInputs = document.querySelectorAll(".replacement-file");
 
-    const totalPages = Math.ceil(reviewItems.length / 10);
-    const startIndex = (currentMainPage - 1) * 10;
+    for (const input of replacementInputs) {
+        if (input.files.length > 0) {
+            const file = input.files[0];
+            const docRow = input.closest(".main-doc-item");
 
-    const currentItems = reviewItems.slice(
-        startIndex,
-        startIndex + 10
-    );
+            let documentName = "Dokumen";
 
-    for (let i = 0; i < currentItems.length; i++) {
-        const item = currentItems[i];
+            if (docRow) {
+                const nameElement = docRow.querySelector(".font-weight-bold");
 
-        const row = $("<li>").addClass(
-            "list-group-item d-flex align-items-center py-2"
-        );
-
-        $("<span>")
-            .addClass("text-muted mr-3 font-weight-bold")
-            .text((startIndex + i + 1) + ".")
-            .appendTo(row);
-
-        $("<span>")
-            .addClass("text-primary mr-2")
-            .text("📄")
-            .appendTo(row);
-
-        $("<span>")
-            .addClass("text-truncate font-weight-medium")
-            .text(item.name)
-            .appendTo(row);
-
-        docList.append(row);
-    }
-
-    if (totalPages > 1) {
-        for (let page = 1; page <= totalPages; page++) {
-            const pageButton = $("<a>")
-                .attr("href", "#")
-                .addClass("page-link")
-                .text(page);
-
-            const pageItem = $("<li>")
-                .addClass("page-item");
-
-            if (page === currentMainPage) {
-                pageItem.addClass("active");
+                if (nameElement) {
+                    documentName = nameElement.textContent.trim();
+                }
             }
 
-            pageItem.append(pageButton);
+            let documentData = {
+                name: documentName,
+                fileName: file.name,
+                size: file.size,
+                type: "Penggantian Dokumen"
+            };
 
-            pageButton.on("click", function (event) {
-                event.preventDefault();
-                currentMainPage = page;
-                renderModalDocuments();
-            });
-
-            controls.append(pageItem);
+            reviewDocuments.push(documentData);
+            totalSize = totalSize + file.size;
         }
     }
-}
 
+    // 3. Tampilkan jumlah dokumen dan total ukuran
+    $("#reviewDocCount").text(reviewDocuments.length);
+    $("#reviewSize").text(fmt(totalSize));
+
+    // 4. Jika tidak ada dokumen baru atau penggantian
+    if (reviewDocuments.length === 0) {
+        reviewDocList.append(
+            $("<li>").text("Tidak ada dokumen baru atau penggantian dokumen.")
+        );
+        return;
+    }
+
+    // 5. Hitung halaman pagination
+    const totalPages = Math.ceil(
+        reviewDocuments.length / reviewItemsPerPage
+    );
+
+    if (currentReviewPage > totalPages) {
+        currentReviewPage = totalPages;
+    }
+
+    if (currentReviewPage < 1) {
+        currentReviewPage = 1;
+    }
+
+    const startIndex = (currentReviewPage - 1) * reviewItemsPerPage;
+    const endIndex = startIndex + reviewItemsPerPage;
+
+    const visibleDocuments = reviewDocuments.slice(startIndex, endIndex);
+
+    // 6. Tampilkan dokumen sesuai halaman
+    for (const documentData of visibleDocuments) {
+        const listItem = $("<li>").addClass("mb-2");
+
+        const documentName = $("<div>")
+            .addClass("font-weight-bold")
+            .text(documentData.name);
+
+        const fileName = $("<small>")
+            .addClass("text-muted d-block")
+            .text(documentData.fileName);
+
+        const documentInfo = $("<small>")
+            .addClass("text-secondary d-block")
+            .text(
+                documentData.type + " • " + fmt(documentData.size)
+            );
+
+        listItem.append(documentName);
+        listItem.append(fileName);
+        listItem.append(documentInfo);
+
+        reviewDocList.append(listItem);
+    }
+
+    // 7. Buat tombol pagination jika lebih dari satu halaman
+    if (totalPages > 1) {
+        const previousButton = $("<button>")
+            .attr("type", "button")
+            .addClass("btn btn-sm btn-outline-primary mr-2")
+            .text("Previous")
+            .prop("disabled", currentReviewPage === 1);
+
+        previousButton.on("click", function () {
+            if (currentReviewPage > 1) {
+                currentReviewPage--;
+                renderModalDocuments();
+            }
+        });
+
+        paginationControls.append(previousButton);
+
+        const pageInfo = $("<span>")
+            .addClass("small text-muted")
+            .text("Halaman " + currentReviewPage + " dari " + totalPages);
+
+        paginationControls.append(pageInfo);
+
+        const nextButton = $("<button>")
+            .attr("type", "button")
+            .addClass("btn btn-sm btn-outline-primary ml-2")
+            .text("Next")
+            .prop("disabled", currentReviewPage === totalPages);
+
+        nextButton.on("click", function () {
+            if (currentReviewPage < totalPages) {
+                currentReviewPage++;
+                renderModalDocuments();
+            }
+        });
+
+        paginationControls.append(nextButton);
+    }
+}
 
 
 
