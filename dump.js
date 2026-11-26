@@ -1,26 +1,28 @@
-function escapeHTML(value) {
-  if (value === null || value === undefined) {
-    return "";
-  }
+const data = new FormData(form);
 
-  return String(value).replace(/[&<>"']/g, function (char) {
-    const entities = {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;"
-    };
+data.delete('newDocuments');
+data.delete('newDocumentNames');
+data.delete('replacementDocumentIds');
 
-    return entities[char];
-  });
+// Menambahkan dokumen baru
+for (const item of added) {
+    data.append("newDocuments", item.file, item.file.name);
+    data.append("newDocumentNames", item.name);
+}
+
+// Mengirim ID dokumen yang akan diganti
+for (const fileInput of replacements) {
+    data.append(
+        "replacementDocumentIds",
+        fileInput.dataset.id
+    );
 }
 
 
 
 
 
-router.get("/read_data", checkAuth, async (req, res) => {
+router.get("/update_data", checkAuth, async (req, res) => {
   try {
     const id = Number(req.query.id);
 
@@ -34,44 +36,7 @@ router.get("/read_data", checkAuth, async (req, res) => {
       return res.status(404).send("Data integrasi tidak ditemukan.");
     }
 
-    // Pagination
-    const itemsPerPage = 10;
-    let currentPage = Number(req.query.page);
-
-    if (!Number.isInteger(currentPage) || currentPage < 1) {
-      currentPage = 1;
-    }
-
-    // Mengambil total dokumen dan total ukuran seluruh dokumen
-    const summaryResult = await db.query(
-      `SELECT
-        COUNT(*)::int AS total_documents,
-        COALESCE(SUM(file_size), 0)::bigint AS total_file_size
-       FROM uploaded_documents
-       WHERE upload_document_id = $1`,
-      [id]
-    );
-
-    const totalDocuments = Number(summaryResult.rows[0].total_documents);
-    const totalSize = (
-      Number(summaryResult.rows[0].total_file_size) /
-      (1024 * 1024)
-    ).toFixed(2);
-
-    let totalPages = Math.ceil(totalDocuments / itemsPerPage);
-
-    if (totalPages < 1) {
-      totalPages = 1;
-    }
-
-    if (currentPage > totalPages) {
-      currentPage = totalPages;
-    }
-
-    const offset = (currentPage - 1) * itemsPerPage;
-
-    // Mengambil dokumen sesuai halaman
-    const docs = await db.query(
+    const result = await db.query(
       `SELECT
         id,
         document_name,
@@ -81,143 +46,112 @@ router.get("/read_data", checkAuth, async (req, res) => {
         created_at
        FROM uploaded_documents
        WHERE upload_document_id = $1
-       ORDER BY id ASC
-       LIMIT $2 OFFSET $3`,
-      [id, itemsPerPage, offset]
+       ORDER BY id ASC`,
+      [id]
     );
+
+    const documents = result.rows;
 
     // Membuat HTML daftar dokumen
     let documentsHTML = "";
 
-    if (docs.rows.length === 0) {
+    if (documents.length === 0) {
       documentsHTML = `
-        <div class="text-muted text-center py-4">
-          Belum ada dokumen.
-        </div>
+        <p class="text-muted text-center py-4">
+          There are no documents yet.
+        </p>
       `;
     } else {
-      for (let i = 0; i < docs.rows.length; i++) {
-        const doc = docs.rows[i];
+      for (let i = 0; i < documents.length; i++) {
+        const doc = documents[i];
 
-        const documentNumber = offset + i + 1;
         const fileSize = (
-          Number(doc.file_size) /
-          (1024 * 1024)
+          Number(doc.file_size) / (1024 * 1024)
         ).toFixed(2);
 
-        let rowClass = "";
-
-        if (i !== docs.rows.length - 1) {
-          rowClass = "border-bottom pb-3 mb-3";
-        }
-
         documentsHTML += `
-          <div class="main-doc-item d-flex flex-wrap justify-content-between align-items-start ${rowClass}">
+          <div class="doc-row main-doc-item">
 
-            <div class="d-flex pr-3">
+            <div class="d-flex align-items-start w-100">
+
               <div
                 class="font-weight-bold text-muted mr-3"
-                style="min-width: 25px;"
+                style="font-size: 16px; min-width: 25px;"
               >
-                ${documentNumber}.
+                ${i + 1}.
               </div>
 
-              <div>
-                <div class="font-weight-bold">
-                  ${escapeHTML(doc.document_name)}
+              <div class="flex-fill">
+
+                <div class="d-flex align-items-start w-100 mb-1">
+
+                  <div>
+                    <div class="font-weight-bold" style="font-size: 16px;">
+                      ${escapeHTML(doc.document_name)}
+                    </div>
+
+                    <div class="small text-muted mb-1">
+                      ${escapeHTML(doc.original_filename)}
+                      · ${fileSize} MB
+                    </div>
+                  </div>
+
+                  <label
+                    class="text-danger small mb-0 font-weight-bold d-flex align-items-center ml-auto pt-1"
+                    style="cursor: pointer; user-select: none; flex-shrink: 0;"
+                  >
+                    <input
+                      type="checkbox"
+                      name="deleteDocumentIds"
+                      value="${encodeURIComponent(doc.id)}"
+                      class="delete-doc mr-1"
+                      style="cursor: pointer;"
+                    >
+                    Delete
+                  </label>
+
                 </div>
 
-                <small class="text-muted">
-                  ${escapeHTML(doc.original_filename)}
-                  ·
-                  ${fileSize} MB
-                </small>
+                <a
+                  class="small font-weight-bold d-block mb-3"
+                  href="/view_file?documentId=${encodeURIComponent(doc.id)}"
+                  target="_blank"
+                >
+                  View Document
+                </a>
+
+                <div class="w-100">
+
+                  <label class="small font-weight-bold mb-2 text-dark">
+                    Replace (optional)
+                  </label>
+
+                  <div class="custom-file w-100">
+                    <input
+                      type="file"
+                      class="custom-file-input replacement-file"
+                      id="replace_${doc.id}"
+                      name="replacementFiles"
+                      data-id="${doc.id}"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx"
+                    >
+
+                    <label
+                      class="custom-file-label small text-muted"
+                      for="replace_${doc.id}"
+                      style="border-color: #ced4da; background-color: #fff;"
+                    >
+                      Choose file or drag here...
+                    </label>
+                  </div>
+
+                </div>
+
               </div>
             </div>
-
-            <div class="pt-1">
-              <a
-                class="btn btn-sm btn-outline-primary"
-                href="/view_file?documentId=${encodeURIComponent(doc.id)}"
-              >
-                View
-              </a>
-            </div>
-
           </div>
         `;
       }
-    }
-
-    // Membuat HTML pagination
-    let paginationHTML = "";
-
-    if (totalPages > 1) {
-      paginationHTML += `
-        <nav class="mt-4" aria-label="Document pagination">
-          <ul class="pagination pagination-sm justify-content-center mb-0">
-      `;
-
-      // Previous
-      let previousClass = "";
-
-      if (currentPage === 1) {
-        previousClass = "disabled";
-      }
-
-      paginationHTML += `
-        <li class="page-item ${previousClass}">
-          <a
-            class="page-link"
-            href="/read_data?id=${id}&page=${currentPage - 1}"
-          >
-            &laquo;
-          </a>
-        </li>
-      `;
-
-      // Nomor halaman
-      for (let page = 1; page <= totalPages; page++) {
-        let activeClass = "";
-
-        if (page === currentPage) {
-          activeClass = "active";
-        }
-
-        paginationHTML += `
-          <li class="page-item ${activeClass}">
-            <a
-              class="page-link"
-              href="/read_data?id=${id}&page=${page}"
-            >
-              ${page}
-            </a>
-          </li>
-        `;
-      }
-
-      // Next
-      let nextClass = "";
-
-      if (currentPage === totalPages) {
-        nextClass = "disabled";
-      }
-
-      paginationHTML += `
-        <li class="page-item ${nextClass}">
-          <a
-            class="page-link"
-            href="/read_data?id=${id}&page=${currentPage + 1}"
-          >
-            &raquo;
-          </a>
-        </li>
-      `;
-
-      paginationHTML += `
-          </ul>
-        </nav>
-      `;
     }
 
     // Membuat HTML alert
@@ -242,18 +176,19 @@ router.get("/read_data", checkAuth, async (req, res) => {
       `;
     }
 
-    return res.render("read_data.ejs", {
+    return res.render("update_data.ejs", {
       integration,
-      totalDocuments,
-      totalSize,
+      totalDocuments: documents.length,
       documentsHTML,
-      paginationHTML,
-      alertHTML
+      alertHTML,
+      maxMB: MAX_MB,
+      maxFiles: MAX_FILES,
+      maxTotalMB: MAX_TOTAL_MB
     });
 
   } catch (err) {
-    console.error("GET /read_data error:", err);
-    return res.status(500).send("Gagal membaca data integrasi.");
+    console.error("GET /update_data error:", err);
+    return res.status(500).send("Gagal membuka halaman edit.");
   }
 });
 
@@ -261,16 +196,8 @@ router.get("/read_data", checkAuth, async (req, res) => {
 
 
 
-
-
-
-<%- alertHTML %>
-
-
-
-
-<div class="font-weight-bold">
-    <%= totalDocuments %> Documents
+<div class="card-header bg-white font-weight-bold pt-4 px-4 border-0 pb-0">
+    Current Documents (<%= totalDocuments %>)
 </div>
 
 
@@ -278,25 +205,79 @@ router.get("/read_data", checkAuth, async (req, res) => {
 
 
 
-<div class="card border-0 shadow-sm">
-    <div class="card-header bg-white font-weight-bold pt-4 px-4 border-0 pb-0">
-        Uploaded Documents
-    </div>
-
-    <div class="card-body p-4 upload-card-body">
-
-        <%- documentsHTML %>
-
-        <%- paginationHTML %>
-
-    </div>
+<div id="mainDocListContainer">
+    <%- documentsHTML %>
 </div>
 
 
 
+const deleteIds = ensureArray(req.body.deleteDocumentIds)
+  .map(Number);
+
+const replacementIds = ensureArray(
+  req.body.replacementDocumentIds
+).map(Number);
+
+const newNames = ensureArray(req.body.newDocumentNames)
+  .map(name => text(name, 255));
+
+// Validasi ID penghapusan
+for (const docId of deleteIds) {
+  if (!Number.isInteger(docId) || docId <= 0) {
+    throw new Error("ID dokumen yang akan dihapus tidak valid.");
+  }
+}
+
+// Validasi ID penggantian
+for (const docId of replacementIds) {
+  if (!Number.isInteger(docId) || docId <= 0) {
+    throw new Error("ID dokumen pengganti tidak valid.");
+  }
+}
+
+// Mencegah ID duplikat
+if (new Set(deleteIds).size !== deleteIds.length) {
+  throw new Error("Terdapat ID dokumen penghapusan yang duplikat.");
+}
+
+if (new Set(replacementIds).size !== replacementIds.length) {
+  throw new Error("Terdapat ID dokumen pengganti yang duplikat.");
+}
+
+// Dokumen tidak boleh dihapus dan diganti sekaligus
+for (const docId of replacementIds) {
+  if (deleteIds.includes(docId)) {
+    throw new Error(
+      "Dokumen yang sama tidak bisa dihapus dan diganti sekaligus."
+    );
+  }
+}
+
+// Validasi jumlah file
+if (replacementIds.length !== replacementFiles.length) {
+  throw new Error(
+    "Jumlah ID dokumen pengganti tidak sesuai dengan jumlah file."
+  );
+}
+
+if (newNames.length !== newFiles.length) {
+  throw new Error(
+    "Jumlah nama dokumen baru tidak sesuai dengan jumlah file."
+  );
+}
+
+// Validasi nama dokumen baru
+for (const name of newNames) {
+  if (!name) {
+    throw new Error("Nama dokumen baru tidak boleh kosong.");
+  }
+}
 
 
 
 
+
+
+<script src="/js/update_data.js"></script>
 
 
