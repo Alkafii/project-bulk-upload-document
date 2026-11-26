@@ -1,24 +1,73 @@
-let successMessage = "Perubahan dokumen berhasil disimpan.";
 
-if (deletedCount > 0) {
-    successMessage = `${deletedCount} dokumen berhasil dihapus.`;
-}
+<div class="py-2 px-0 w-100 overflow-visible">
 
-req.flash("success", successMessage);
+    <% if (typeof successMessage !== 'undefined' && successMessage) { %>
+        <div class="alert alert-success alert-dismissible fade show w-100 text-center mb-4 shadow-sm" role="alert">
+            <strong><%= successMessage %></strong>
 
-// Simpan session sebelum browser melakukan navigasi
-req.session.save(function (err) {
-    if (err) {
-        console.error("Gagal menyimpan session:", err);
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close" style="outline: none;">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    <% } %>
 
-        return res.status(500).json({
-            message: "Dokumen berhasil diproses, tetapi gagal menyimpan pesan notifikasi."
-        });
-    }
+    <% if (typeof errorMessage !== 'undefined' && errorMessage) { %>
+        <div class="alert alert-danger alert-dismissible fade show w-100 text-center mb-4 shadow-sm" role="alert">
+            <strong><%= errorMessage %></strong>
 
-    return res.status(200).json({
-        success: true,
-        redirectUrl: `/read_data?id=${id}`
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close" style="outline: none;">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    <% } %>
+
+</div>
+
+
+
+
+
+
+
+
+
+return res.render("index.ejs", {
+    tableRows: tableRows,
+    successMessage: req.flash("success")[0] || "",
+    errorMessage: req.flash("error")[0] || ""
+});
+
+
+
+
+
+
+
+
+router.get("/upload", checkAuth, (req, res) => {
+    res.render("upload.ejs", {
+        maxMB: MAX_MB,
+        maxFiles: MAX_FILES,
+        maxTotalMB: MAX_TOTAL_MB,
+        successMessage: req.flash("success")[0] || "",
+        errorMessage: req.flash("error")[0] || ""
+    });
+});
+
+
+
+
+
+
+
+
+router.get("/upload", checkAuth, (req, res) => {
+    res.render("upload.ejs", {
+        maxMB: MAX_MB,
+        maxFiles: MAX_FILES,
+        maxTotalMB: MAX_TOTAL_MB,
+        successMessage: req.flash("success")[0] || "",
+        errorMessage: req.flash("error")[0] || ""
     });
 });
 
@@ -30,60 +79,57 @@ req.session.save(function (err) {
 
 
 
-
-
-
-console.error("POST /update_data error:", err);
-
-const errorMessage = err.message || "Gagal memperbarui dokumen.";
-
-if (req.get("X-Requested-With") === "XMLHttpRequest") {
-    return res.status(400).json({
-        success: false,
-        message: errorMessage
-    });
-}
-
-return flashError(req, res, errorMessage, redirectUrl);
-
-
-
-
-
-
-
-
-
-save.disabled = true;
-save.textContent = "Menyimpan...";
-
-fetch(form.action, {
-    method: "POST",
-    body: data,
-    headers: {
-        "X-Requested-With": "XMLHttpRequest"
-    }
-})
-.then(async function (response) {
-    const result = await response.json();
-
-    if (!response.ok) {
-        throw new Error(result.message || "Gagal menyimpan perubahan.");
-    }
-
-    if (result.success && result.redirectUrl) {
-        window.location.href = result.redirectUrl;
-        return;
-    }
-
-    throw new Error("Respons server tidak valid.");
-})
-.catch(function (err) {
-    alert(err.message);
-
-    save.disabled = false;
-    save.textContent = "Save";
+return res.render("read_data.ejs", {
+    integration,
+    totalDocuments,
+    totalSize,
+    documentsHTML,
+    paginationHTML,
+    successMessage: req.flash("success")[0] || "",
+    errorMessage: req.flash("error")[0] || ""
 });
+
+
+
+
+
+
+
+
+return res.render("update_data.ejs", {
+    integration,
+    totalDocuments: documents.length,
+    documentsHTML,
+    successMessage: req.flash("success")[0] || "",
+    errorMessage: req.flash("error")[0] || "",
+    maxMB: MAX_MB,
+    maxFiles: MAX_FILES,
+    maxTotalMB: MAX_TOTAL_MB
+});
+
+
+
+
+
+
+
+
+<div id="flashContainer">
+    <%- include('./partials/alerts.ejs') %>
+</div>
+
+
+
+
+
+<%- include('./partials/alerts.ejs') %>
+
+
+
+
+
+<%- include('./partials/alerts.ejs') %>
+
 
 
 
