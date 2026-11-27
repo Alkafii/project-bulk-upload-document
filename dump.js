@@ -1,21 +1,28 @@
-data.delete("deleteDocumentIds");
-data.delete("replacementFiles");
-data.delete("replacementDocumentIds");
 
-// Save hanya menambahkan dokumen baru.
-// Perubahan Partner Name dan API Name diproses melalui Update.
-data.set("institutionName", originalInstitution);
-data.set("integrationType", originalIntegration);
+if (currentAction === "update") {
+    for (const fileInput of currentReplacements) {
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            const docRow = fileInput.closest(".main-doc-item");
 
-for (const item of added) {
-    data.append(
-        "newDocuments",
-        item.file,
-        item.file.name
-    );
+            let documentName = "Dokumen";
 
-    data.append(
-        "newDocumentNames",
-        item.name.trim()
-    );
+            if (docRow) {
+                const nameElement = docRow.querySelector(".document-name");
+
+                if (nameElement) {
+                    documentName = nameElement.textContent.trim();
+                }
+            }
+
+            reviewDocuments.push({
+                name: documentName,
+                fileName: file.name,
+                size: file.size,
+                type: "Penggantian Dokumen"
+            });
+
+            totalSize += file.size;
+        }
+    }
 }
