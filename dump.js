@@ -1,85 +1,88 @@
 
-if (currentAction === "update") {
-    for (const fileInput of currentReplacements) {
-        if (fileInput.files.length > 0) {
-            const file = fileInput.files[0];
-            const docRow = fileInput.closest(".main-doc-item");
+<style>
+  .file-row {
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    padding: 14px;
+    margin-bottom: 10px;
+    background: #fff;
+  }
 
-            let documentName = "Dokumen";
+  .file-row .file-name {
+    font-size: 12px;
+    color: #64748b;
+    word-break: break-word;
+  }
 
-            if (docRow) {
-                const nameElement = docRow.querySelector(".document-name");
+  .file-row .document-name-label {
+    font-size: 14px;
+    min-width: 110px;
+  }
 
-                if (nameElement) {
-                    documentName = nameElement.textContent.trim();
-                }
-            }
-
-            reviewDocuments.push({
-                name: documentName,
-                fileName: file.name,
-                size: file.size,
-                type: "Penggantian Dokumen"
-            });
-
-            totalSize += file.size;
-        }
-    }
-}
-
-
-
-
-
-
-app.use((err, req, res, next) => {
-    console.error("Application error:", err);
-
-    let message = err.message || "Terjadi kesalahan pada server.";
-    let statusCode = 500;
-
-    if (err instanceof multer.MulterError) {
-        statusCode = 400;
-
-        if (err.code === "LIMIT_FILE_SIZE") {
-            message = `Ukuran setiap file maksimal ${MAX_MB} MB.`;
-        } else if (err.code === "LIMIT_FILE_COUNT") {
-            message = `Maksimal ${MAX_FILES} file dalam satu kali upload.`;
-        } else if (err.code === "LIMIT_UNEXPECTED_FILE") {
-            message = `Field upload tidak sesuai: ${err.field || "tidak diketahui"}.`;
-        } else {
-            message = "Upload gagal. Periksa jumlah dan ukuran file.";
-        }
+  @media (max-width: 576px) {
+    .file-row {
+      padding: 12px;
     }
 
-    if (res.headersSent) {
-        return next(err);
+    .file-row .document-row-content {
+      gap: 10px;
     }
 
-    // Jika request berasal dari AJAX / Fetch
-    if (req.get("X-Requested-With") === "XMLHttpRequest") {
-        return res.status(statusCode).json({
-            success: false,
-            message: message
-        });
+    .file-row .remove-file {
+      flex-shrink: 0;
     }
+  }
+</style>
 
-    // Jika request biasa
-    if (req.flash) {
-        req.flash("error", message);
-    }
+<template id="documentListItemTemplate">
+  <div class="file-row">
+    <div class="row align-items-start no-gutters document-row-content">
 
-    const isUpdate = req.path === "/update_data";
+      <div class="col-auto pr-3 pt-1">
+        <label
+          class="font-weight-bold mb-0 text-dark document-name-label"
+          data-document-label>
+          Document Name #1
+        </label>
+      </div>
 
-    let redirect = "/upload";
+      <div class="col">
+        <input
+          type="text"
+          class="form-control form-control-sm doc-name"
+          maxlength="255"
+          data-document-name
+          required>
 
-    if (isUpdate && req.query.id) {
-        redirect = `/update_data?id=${encodeURIComponent(req.query.id)}`;
-    }
+        <div
+          class="file-name pl-1 mt-1"
+          data-file-info>
+        </div>
+      </div>
 
-    return res.redirect(redirect);
-});
+      <div class="col-auto pl-4 pt-1">
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-danger remove-file"
+          data-remove-document>
+          Delete
+        </button>
+      </div>
 
+    </div>
+  </div>
+</template>
+
+
+
+
+
+<%- include('./partials/document_list_item.ejs') %>
+
+
+
+
+<%- include('./partials/document_list_item.ejs') %>
 
 
 
