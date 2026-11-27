@@ -137,6 +137,7 @@
 
                             <div id="newList" class="mt-4"></div>
                             <%- include('./partials/document_list_item.ejs') %>
+                            
                         </div>
                     </div>
 
@@ -177,6 +178,7 @@
 
             const drop = document.getElementById('dropzone');
             const list = document.getElementById('newList');
+            const documentTemplate = document.getElementById("documentListItemTemplate");
 
             const save = document.getElementById('saveBtn');
             const update = document.getElementById('updateBtn');
@@ -240,41 +242,31 @@
             }
 
             function render() {
-                list.innerHTML = '';
+                list.innerHTML = "";
 
-                added.forEach((item, index) => {
-                    const row = document.createElement('div');
+                added.forEach(function(item, index) {
+                    const row = documentTemplate.content.cloneNode(true);
 
-                    row.className = 'doc-row';
+                    const label = row.querySelector("[data-document-label]");
+                    const nameInput = row.querySelector("[data-document-name]");
+                    const fileInfo = row.querySelector("[data-file-info]");
+                    const removeButton = row.querySelector("[data-remove-document]");
 
-                    row.innerHTML = `
-                        <label class="small font-weight-bold">
-                            Nama dokumen
-                        </label>
+                    label.textContent = "Document Name #" + (index + 1);
 
-                        <div class="d-flex">
-                            <input
-                                class="form-control form-control-sm mr-2"
-                                maxlength="255"
-                                value="${item.name}">
+                    nameInput.value = item.name;
 
-                            <button
-                                type="button"
-                                class="btn btn-sm btn-outline-danger">
-                                Delete
-                            </button>
-                        </div>
+                    fileInfo.textContent =
+                        item.file.name + " · " +
+                        (item.file.size < 1048576
+                            ? (item.file.size / 1024).toFixed(1) + " KB"
+                            : (item.file.size / 1048576).toFixed(2) + " MB");
 
-                        <div class="small text-muted mt-1">
-                            ${item.file.name} · ${fmt(item.file.size)}
-                        </div>
-                    `;
-
-                    row.querySelector('input').addEventListener('input', function(event) {
-                        item.name = event.target.value;
+                    nameInput.addEventListener("input", function() {
+                        item.name = this.value;
                     });
 
-                    row.querySelector('button').addEventListener('click', function() {
+                    removeButton.addEventListener("click", function() {
                         added.splice(index, 1);
                         render();
                     });

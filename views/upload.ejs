@@ -168,6 +168,7 @@
       const drop = document.getElementById("dropzone"), list = document.getElementById("fileList");
       const count = document.getElementById("fileCount"), btnPreview = document.getElementById("btnPreviewUpload");
       const flashContainer = document.getElementById("flashContainer");
+      const documentTemplate = document.getElementById("documentListItemTemplate");
 
       const maxFile = Number("<%= maxMB %>") * 1024 * 1024, maxTotal = Number("<%= maxTotalMB %>") * 1024 * 1024;
       const maxFiles = Number("<%= maxFiles %>"), allowed = ["pdf", "doc", "docx", "xls", "xlsx"];
@@ -191,20 +192,40 @@
 
       function render() {
         list.innerHTML = "";
-        selected.forEach((item, index) => {
-          const row = $(`
-            <div class="file-row"><div class="row align-items-start no-gutters">
-              <div class="col-auto pr-3 pt-1"><label class="font-weight-bold mb-0 text-dark" style="font-size:14px; min-width:110px;">Document Name#${index+1}</label></div>
-              <div class="col"><input type="text" class="form-control form-control-sm doc-name" maxlength="255" value="${item.name}" required><div class="text-muted small pl-1 mt-1" style="font-size:12px;">${item.file.name} · ${formatSize(item.file.size)}</div></div>
-              <div class="col-auto pl-4 pt-1"><button type="button" class="btn btn-sm btn-outline-danger remove-file">Delete</button></div>
-            </div></div>`);
-          row.find('.doc-name').on('input', (e) => { item.name = e.target.value; checkDuplicates(); });
-          row.find('.remove-file').on('click', () => { selected.splice(index, 1); render(); });
-          $(list).append(row);
+
+        selected.forEach(function(item, index) {
+            const row = documentTemplate.content.cloneNode(true);
+
+            const label = row.querySelector("[data-document-label]");
+            const nameInput = row.querySelector("[data-document-name]");
+            const fileInfo = row.querySelector("[data-file-info]");
+            const removeButton = row.querySelector("[data-remove-document]");
+
+            label.textContent = "Document Name #" + (index + 1);
+
+            nameInput.value = item.name;
+
+            fileInfo.textContent =
+                item.file.name + " · " + formatSize(item.file.size);
+
+            nameInput.addEventListener("input", function() {
+                item.name = this.value;
+                checkDuplicates();
+            });
+
+            removeButton.addEventListener("click", function() {
+                selected.splice(index, 1);
+                render();
+            });
+
+            list.appendChild(row);
         });
-        count.textContent = `${selected.length} file · ${formatSize(getTotalSize())}`;
+
+        count.textContent =
+            selected.length + " file · " + formatSize(getTotalSize());
+
         checkDuplicates();
-      }
+    }
 
       function checkDuplicates() {
           btnPreview.disabled = selected.length === 0 || isUploading;

@@ -317,7 +317,7 @@ router.post( "/upload", checkAuth, upload.array("documents", MAX_FILES), async (
       await client.query("COMMIT");
       transactionStarted = false;
 
-      const successMessage = `Data integrasi dengan ${institution} sebanyak ${files.length} dokumen berhasil diunggah.`;
+      const successMessage = `Data integrasi dengan ${institution}, sebanyak ${files.length} dokumen berhasil diunggah.`;
 
       req.flash("success", successMessage);
 
