@@ -1,88 +1,93 @@
+const documentTemplate = document.getElementById("documentListItemTemplate");
 
-<style>
-  .file-row {
-    border: 1px solid #e2e8f0;
-    border-radius: 9px;
-    padding: 14px;
-    margin-bottom: 10px;
-    background: #fff;
-  }
 
-  .file-row .file-name {
-    font-size: 12px;
-    color: #64748b;
-    word-break: break-word;
-  }
 
-  .file-row .document-name-label {
-    font-size: 14px;
-    min-width: 110px;
-  }
+function render() {
+    list.innerHTML = "";
 
-  @media (max-width: 576px) {
-    .file-row {
-      padding: 12px;
-    }
+    selected.forEach(function(item, index) {
+        const row = documentTemplate.content.cloneNode(true);
 
-    .file-row .document-row-content {
-      gap: 10px;
-    }
+        const label = row.querySelector("[data-document-label]");
+        const nameInput = row.querySelector("[data-document-name]");
+        const fileInfo = row.querySelector("[data-file-info]");
+        const removeButton = row.querySelector("[data-remove-document]");
 
-    .file-row .remove-file {
-      flex-shrink: 0;
-    }
-  }
-</style>
+        label.textContent = "Document Name #" + (index + 1);
 
-<template id="documentListItemTemplate">
-  <div class="file-row">
-    <div class="row align-items-start no-gutters document-row-content">
+        nameInput.value = item.name;
 
-      <div class="col-auto pr-3 pt-1">
-        <label
-          class="font-weight-bold mb-0 text-dark document-name-label"
-          data-document-label>
-          Document Name #1
-        </label>
-      </div>
+        fileInfo.textContent =
+            item.file.name + " · " + formatSize(item.file.size);
 
-      <div class="col">
-        <input
-          type="text"
-          class="form-control form-control-sm doc-name"
-          maxlength="255"
-          data-document-name
-          required>
+        nameInput.addEventListener("input", function() {
+            item.name = this.value;
+            checkDuplicates();
+        });
 
-        <div
-          class="file-name pl-1 mt-1"
-          data-file-info>
-        </div>
-      </div>
+        removeButton.addEventListener("click", function() {
+            selected.splice(index, 1);
+            render();
+        });
 
-      <div class="col-auto pl-4 pt-1">
-        <button
-          type="button"
-          class="btn btn-sm btn-outline-danger remove-file"
-          data-remove-document>
-          Delete
-        </button>
-      </div>
+        list.appendChild(row);
+    });
 
-    </div>
-  </div>
-</template>
+    count.textContent =
+        selected.length + " file · " + formatSize(getTotalSize());
+
+    checkDuplicates();
+}
 
 
 
 
 
-<%- include('./partials/document_list_item.ejs') %>
+const documentTemplate = document.getElementById("documentListItemTemplate");
 
 
 
 
-<%- include('./partials/document_list_item.ejs') %>
+
+function render() {
+    list.innerHTML = "";
+
+    added.forEach(function(item, index) {
+        const row = documentTemplate.content.cloneNode(true);
+
+        const label = row.querySelector("[data-document-label]");
+        const nameInput = row.querySelector("[data-document-name]");
+        const fileInfo = row.querySelector("[data-file-info]");
+        const removeButton = row.querySelector("[data-remove-document]");
+
+        label.textContent = "Document Name #" + (index + 1);
+
+        nameInput.value = item.name;
+
+        fileInfo.textContent =
+            item.file.name + " · " +
+            (item.file.size < 1048576
+                ? (item.file.size / 1024).toFixed(1) + " KB"
+                : (item.file.size / 1048576).toFixed(2) + " MB");
+
+        nameInput.addEventListener("input", function() {
+            item.name = this.value;
+        });
+
+        removeButton.addEventListener("click", function() {
+            added.splice(index, 1);
+            render();
+        });
+
+        list.appendChild(row);
+    });
+
+    updateActionButtons();
+}
+
+
+
+
 
 
 
