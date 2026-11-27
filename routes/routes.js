@@ -6,7 +6,11 @@ import bcrypt from "bcrypt";
 import { randomUUID } from "node:crypto";
 import upload from "../middleware/upload.js";
 import {
-  MAX_MB, MAX_FILES, MAX_TOTAL_SIZE, MAX_TOTAL_MB
+  MAX_MB,
+  MAX_FILES,
+  MAX_TOTAL_SIZE,
+  MAX_TOTAL_MB,
+  ALLOWED_EXTENSIONS
 } from "../config/uploadConfig.js";
 
 const router = express.Router();
@@ -40,11 +44,6 @@ function displayNameFromFile(filename) {
     .trim();
 }
 
-function parseArray(value) {
-  if (value == null) return [];
-  return Array.isArray(value) ? value : [value];
-}
-
 function ensureArray(value) {
   return Array.isArray(value) ? value : (value == null ? [] : [value]);
 }
@@ -55,8 +54,10 @@ function validateUploadBatch(files) {
   const total = files.reduce((sum, file) => sum + file.size, 0);
   if (total > MAX_TOTAL_SIZE) throw new Error(`Total ukuran dokumen maksimal ${MAX_TOTAL_MB} MB.`);
   for (const file of files) {
-    if (!allowedExt.has(path.extname(file.originalname || "").toLowerCase())) {
-      throw new Error("Ada file dengan format yang tidak didukung.");
+    if (!ALLOWED_EXTENSIONS.includes(
+    path.extname(file.originalname || "").toLowerCase()
+    )) {
+        throw new Error("Ada file dengan format yang tidak didukung.");
     }
   }
 }

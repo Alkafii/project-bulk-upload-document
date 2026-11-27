@@ -4,7 +4,7 @@ import bodyParser from "body-parser";
 import multer from "multer";
 import { sessionMiddleware, flashMiddleware } from "./middleware/session.js";
 import documentRoutes from "./routes/routes.js";
-import { MAX_MB, MAX_FILES, MAX_TOTAL_MB } from "./config/uploadConfig.js";
+import { MAX_MB, MAX_FILES } from "./config/uploadConfig.js";
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;

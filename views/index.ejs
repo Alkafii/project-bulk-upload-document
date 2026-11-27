@@ -103,15 +103,6 @@
                     $('#deleteModal').modal('show');
                 }
             });
-
-            $('.btn-delete-trigger').on('click', function() {
-                const id = $(this).data('id');
-                const name = $(this).data('name');
-                
-                $('#selectedItemsList').empty().append(`<li>${name}</li>`);
-                $('#confirmDeleteBtn').attr('href', `/delete?id=${id}`);
-                $('#deleteModal').modal('show');
-            });
         });
     </script>
 </body>

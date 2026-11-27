@@ -1,259 +1,92 @@
-/* ==========================================
-   1. CUSTOM FILE UPLOAD SECTION
-   ========================================== */
-.custom-file {
-  position: relative;
-  width: 100%;
-  height: 130px;
+.upload-page {
+  min-height: 100vh;
 }
 
-.custom-file .custom-file-input {
-  position: absolute;
-  inset: 0;
+.upload-container {
   width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
-  z-index: 2;
+  max-width: 100%;
 }
 
-.custom-file .custom-file-label {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  border: 2px dashed #b8c2d1;
-  border-radius: 8px;
-  background-color: #f8faff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.dropzone {
+  border: 2px dashed #9bb8df;
+  border-radius: 12px;
+  background: #f7faff;
+  padding: 32px;
   text-align: center;
   cursor: pointer;
-  padding: 15px;
-  color: #6c757d;
-}
-
-.custom-file-label::after {
-  display: none;
-}
-
-.custom-file:hover .custom-file-label {
-  border-color: #007bff;
-  background-color: #f0f6ff;
-}
-
-
-/* ==========================================
-   2. FORM STEP SECTIONS
-   ========================================== */
-.form-step-section {
-  display: none;
-}
-
-.form-step-section.active {
-  display: block;
-}
-
-
-/* ==========================================
-   3. STEPPER LAYOUT & ITEMS (KONDISI AWAL)
-   ========================================== */
-.sticky-stepper-wrapper {
-  position: sticky;
-  top: 0;
-  z-index: 1020;
-  padding: 20px 0 !important; /* Mencegah penebalan luar pembungkus saat scroll */
-  margin-bottom: 15px;
-  background-color: transparent;
-}
-
-.stepper-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #ffffff;
-  padding: 14px 24px;
-  border-radius: 8px;
-  border: 1px solid #d1d5db;
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.08),
-    0 2px 4px rgba(0, 0, 0, 0.04);
   transition:
-    background-color 0.3s ease,
-    color 0.3s ease,
-    box-shadow 0.3s ease;
-  width: 100% !important;
-  max-width: 100% !important;
-  box-sizing: border-box !important;
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 
-.stepper-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  position: relative;
+.dropzone:hover,
+.dropzone.drag {
+  background: #eaf2ff;
+  border-color: #2563eb;
 }
 
-.step-counter {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background-color: #eaecf0;
-  color: #6c757d;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 11px;
-  font-weight: 700;
-  transition: all 0.2s ease;
+.dropzone:focus {
+  outline: 3px solid rgba(37, 99, 235, 0.2);
+  outline-offset: 2px;
 }
 
-.step-name {
+.file-row {
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  padding: 14px;
+  margin-bottom: 10px;
+  background: #fff;
+}
+
+.file-name {
   font-size: 13px;
-  font-weight: 500;
-  color: #6c757d;
+  color: #64748b;
+  word-break: break-word;
 }
 
-.step-line {
-  flex-grow: 1;
-  height: 2px;
-  background-color: #eaecf0;
-  margin: 0 15px;
-  max-width: 60px;
+#fileCount {
+  white-space: nowrap;
 }
 
-
-/* ==========================================
-   4. STEPPER STATUS COLORS (ACTIVE & COMPLETED)
-   ========================================== */
-.stepper-item.active .step-counter {
-  background-color: #007bff;
-  color: #fff;
+@media (min-width: 769px) {
+  .upload-container {
+    max-width: 1050px;
+  }
 }
 
-.stepper-item.active .step-name {
-  color: #1a1a1a;
-  font-weight: 600;
-}
+@media (max-width: 768px) {
+  .upload-page main {
+    padding: 16px !important;
+  }
 
-.stepper-item.completed .step-counter {
-  background-color: #28a745 !important;
-  color: white !important;
-}
-
-.stepper-item.completed .step-name {
-  color: #28a745;
-}
-
-
-/* ==========================================
-   5. STYLING SAAT STICKY (BACKGROUND HITAM)
-   ========================================== */
-.stepper-container.is-sticky {
-  background-color: #1a252f !important;
-  color: #ffffff !important;
-  border-color: #334155 !important;
-  
-  /* FIX: Mengunci kelengkungan 4 sudut & ketebalan agar persis seperti box putih */
-  border-radius: 8px !important;
-  padding: 14px 24px !important; 
-  margin: 0 auto !important;
-  box-shadow: 
-    0 4px 12px rgba(0, 0, 0, 0.15),
-    0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
-  
-  /* FIX: Mengunci sebaran flexbox agar jarak horizontal tulisan tidak melar jauh */
-  display: flex !important;
-  justify-content: space-between !important;
-  align-items: center !important;
-  transition: all 0.3s ease;
-}
-
-/* Warna font saat kondisi sticky hitam aktif */
-.stepper-container.is-sticky .step-name {
-  color: #ffffff !important;
-}
-
-.stepper-container.is-sticky .stepper-item.active .step-name {
-  color: #38bdf8 !important;
-}
-
-.stepper-container.is-sticky .stepper-item.completed .step-name {
-  color: #28a745 !important;
-}
-
-/* Warna garis penghubung saat sticky */
-.stepper-container.is-sticky .step-line {
-  background-color: #334155 !important;
-}
-
-/* Elemen counter lingkaran saat sticky */
-.stepper-container.is-sticky .step-counter {
-  background-color: #334155 !important;
-  color: #94a3b8 !important;
-  border-color: #1e293b !important;
-}
-
-.stepper-container.is-sticky .stepper-item.active .step-counter {
-  background-color: #007bff !important;
-  color: #fff !important;
-}
-
-.stepper-container.is-sticky .stepper-item.completed .step-counter {
-  background-color: #28a745 !important;
-  color: #fff !important;
-}
-
-.stepper-container.is-sticky .stepper-item:not(.active):not(.completed) .step-counter {
-  background-color: #34495e !important;
-  color: #ffffff !important;
-}
-
-.page-title {
-  font-weight: 700;
-  color: #2563eb;
-}
-
-.section-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: #334155;
-}
-
-.document-card {
-  border: 0;
-  border-radius: 10px;
-}
-
-.document-table th {
-  background: #2563eb;
-  color: white;
-  font-size: 13px;
-  vertical-align: middle;
-}
-
-.document-table td {
-  font-size: 14px;
-  vertical-align: middle;
-}
-
-.form-label {
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.required {
-  color: #dc3545;
+  .upload-container {
+    padding-left: 0;
+    padding-right: 0;
+  }
 }
 
 @media (max-width: 576px) {
-  .page-content {
-    padding: 16px 10px;
+  .upload-card-body {
+    padding: 16px !important;
   }
 
-  .card-body {
-    padding: 16px;
+  .dropzone {
+    padding: 24px 14px;
+  }
+
+  .file-row {
+    padding: 12px;
+  }
+
+  .file-row .d-flex {
+    gap: 10px;
+  }
+
+  .file-row .remove-file {
+    flex-shrink: 0;
+  }
+
+  .upload-actions {
+    flex-wrap: wrap;
   }
 }
