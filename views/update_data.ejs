@@ -137,7 +137,7 @@
 
                             <div id="newList" class="mt-4"></div>
                             <%- include('./partials/document_list_item.ejs') %>
-                            
+
                         </div>
                     </div>
 
@@ -394,7 +394,7 @@
                     throw new Error("Respons server tidak valid.");
                 })
                 .catch(function(error) {
-                    alert(error.message);
+                    showErrorMessage(error.message);
 
                     update.disabled = false;
                     update.textContent = "Update";
@@ -443,7 +443,10 @@
                 if (replacements.some(function(fileInput) {
                     return deleteIds.includes(fileInput.dataset.id);
                 })) {
-                    alert("Dokumen yang sama tidak bisa dihapus dan diganti sekaligus.");
+                    showErrorMessage(
+                        "Dokumen yang sama tidak bisa dihapus dan diganti sekaligus."
+                    );
+
                     return;
                 }
 
