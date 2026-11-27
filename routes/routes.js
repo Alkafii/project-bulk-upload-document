@@ -243,177 +243,141 @@ router.get("/upload", checkAuth, (req, res) => {
     });
 });
 
-router.post(
-    "/upload",
-    checkAuth,
-    upload.array("documents", MAX_FILES),
-    async (req, res) => {
-        const folderName = `integration-${randomUUID()}`;
-        const folderPath = path.join(STORAGE_ROOT, folderName);
 
-        let client;
-        let folderCreated = false;
-        let transactionStarted = false;
+router.post( "/upload", checkAuth, upload.array("documents", MAX_FILES), async (req, res) => {
+    const folderName = `integration-${randomUUID()}`;
+    const folderPath = path.join(STORAGE_ROOT, folderName);
 
-        try {
-            const files = req.files || [];
+    let client;
+    let folderCreated = false;
+    let transactionStarted = false;
 
-            validateUploadBatch(files);
+    try {
+      const files = req.files || [];
+      validateUploadBatch(files);
 
-            const institution = text(req.body.institutionName, 256);
-            const apiName = text(req.body.integrationType, 128);
+      const institution = text(req.body.institutionName, 256);
+      const apiName = text(req.body.integrationType, 128);
 
-            const documentNames = ensureArray(
-                req.body.documentNames
-            ).map(name => text(name, 255));
+      const documentNames = ensureArray(req.body.documentNames).map((name) =>
+        text(name, 255),
+      );
 
-            if (!institution || !apiName) {
-                throw new Error(
-                    "Nama mitra (Partner Name) dan API Name wajib diisi."
-                );
-            }
+      if (!institution || !apiName) {
+        throw new Error("Nama mitra (Partner Name) dan API Name wajib diisi.");
+      }
 
-            if (files.length === 0) {
-                throw new Error(
-                    "Silakan pilih minimal 1 dokumen untuk diunggah."
-                );
-            }
+      if (files.length === 0) {
+        throw new Error("Silakan pilih minimal 1 dokumen untuk diunggah.");
+      }
 
-            if (documentNames.length !== files.length) {
-                throw new Error(
-                    "Jumlah nama dokumen tidak sesuai dengan berkas yang dipilih."
-                );
-            }
+      if (documentNames.length !== files.length) {
+        throw new Error(
+          "Jumlah nama dokumen tidak sesuai dengan berkas yang dipilih.",
+        );
+      }
 
-            for (const docName of documentNames) {
-                if (!docName) {
-                    throw new Error(
-                        "Nama dokumen tidak boleh kosong."
-                    );
-                }
-            }
-
-            await fs.mkdir(folderPath, {
-                recursive: true
-            });
-
-            folderCreated = true;
-
-            client = await db.connect();
-
-            // Mulai transaksi database
-            await client.query("BEGIN");
-            transactionStarted = true;
-
-            // Simpan data integrasi
-            const integrationResult = await client.query(
-                `INSERT INTO upload_document
-                    (name, api_name, folder_name, created_at, updated_at)
-                VALUES
-                    ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                RETURNING id`,
-                [institution, apiName, folderName]
-            );
-
-            const integrationId = integrationResult.rows[0].id;
-
-            for (let i = 0; i < files.length; i++) {
-                const metadata = await writeUploadedFile(
-                    files[i],
-                    folderPath
-                );
-
-                await insertDocument(
-                    client,
-                    integrationId,
-                    metadata,
-                    documentNames[i]
-                );
-            }
-
-            await client.query("COMMIT");
-            transactionStarted = false;
-
-            const successMessage =
-                `Data integrasi berhasil ditambahkan. ${files.length} dokumen berhasil diunggah.`;
-
-            req.flash("success", successMessage);
-
-            if (
-                req.get("X-Requested-With") === "XMLHttpRequest"
-            ) {
-                return req.session.save(function (err) {
-                    if (err) {
-                        console.error(
-                            "Gagal menyimpan session:",
-                            err
-                        );
-
-                        return res.status(500).json({
-                            success: false,
-                            message: "Data berhasil disimpan, tetapi notifikasi gagal disimpan."
-                        });
-                    }
-
-                    return res.status(200).json({
-                        success: true,
-                        redirectUrl: "/"
-                    });
-                });
-            }
-
-            return res.redirect("/");
-
-        } catch (err) {
-            console.error("POST /upload error:", err);
-            if (client && transactionStarted) {
-                await client.query("ROLLBACK").catch(rollbackError => {
-                    console.error(
-                        "Gagal melakukan rollback:",
-                        rollbackError
-                    );
-                });
-
-                transactionStarted = false;
-            }
-
-            if (folderCreated) {
-                await fs.rm(folderPath, {
-                    recursive: true,
-                    force: true
-                }).catch(cleanupError => {
-                    console.error(
-                        "Gagal membersihkan folder upload:",
-                        cleanupError
-                    );
-                });
-            }
-
-            const errorMessage =
-                err.message || "Gagal menyimpan dokumen.";
-
-            if (
-                req.get("X-Requested-With") === "XMLHttpRequest"
-            ) {
-                return res.status(400).json({
-                    success: false,
-                    message: errorMessage
-                });
-            }
-
-            return flashError(
-                req,
-                res,
-                errorMessage,
-                "/upload"
-            );
-
-        } finally {
-            if (client) {
-                client.release();
-            }
+      for (const docName of documentNames) {
+        if (!docName) {
+          throw new Error("Nama dokumen tidak boleh kosong.");
         }
+      }
+
+      await fs.mkdir(folderPath, {
+        recursive: true,
+      });
+
+      folderCreated = true;
+
+      client = await db.connect();
+
+      await client.query("BEGIN");
+      transactionStarted = true;
+
+      const integrationResult = await client.query(
+        `INSERT INTO upload_document (name, api_name, folder_name, created_at, updated_at)
+        VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        RETURNING id`,
+        [institution, apiName, folderName],
+      );
+      
+      const integrationId = integrationResult.rows[0].id;
+      
+      for (let i = 0; i < files.length; i++) {
+        const metadata = await writeUploadedFile(files[i], folderPath);
+
+        await insertDocument(
+          client,
+          integrationId,
+          metadata,
+          documentNames[i],
+        );
+      }
+
+      await client.query("COMMIT");
+      transactionStarted = false;
+
+      const successMessage = `Data integrasi dengan ${institution} sebanyak ${files.length} dokumen berhasil diunggah.`;
+
+      req.flash("success", successMessage);
+
+      if (req.get("X-Requested-With") === "XMLHttpRequest") {
+        return req.session.save(function (err) {
+          if (err) {
+            console.error("Gagal menyimpan session:", err);
+
+            return res.status(500).json({
+              success: false,
+              message:
+                "Data berhasil disimpan, tetapi notifikasi gagal disimpan.",
+            });
+          }
+
+          return res.status(200).json({
+            success: true,
+            redirectUrl: "/",
+          });
+        });
+      }
+
+      return res.redirect("/");
+    } catch (err) {
+      console.error("POST /upload error:", err);
+      if (client && transactionStarted) {
+        await client.query("ROLLBACK").catch((rollbackError) => {
+          console.error("Gagal melakukan rollback:", rollbackError);
+        });
+
+        transactionStarted = false;
+      }
+
+      if (folderCreated) {
+        await fs
+          .rm(folderPath, {
+            recursive: true,
+            force: true,
+          })
+          .catch((cleanupError) => {
+            console.error("Gagal membersihkan folder upload:", cleanupError);
+          });
+      }
+
+      const errorMessage = err.message || "Gagal menyimpan dokumen.";
+
+      if (req.get("X-Requested-With") === "XMLHttpRequest") {
+        return res.status(400).json({
+          success: false,
+          message: errorMessage,
+        });
+      }
+
+      return flashError(req, res, errorMessage, "/upload");
+    } finally {
+      if (client) {
+        client.release();
+      }
     }
+  },
 );
 
 

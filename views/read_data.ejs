@@ -23,6 +23,10 @@
             display: none !important;
         }
 
+        .stat-highlight {
+            color: #1d4ed8;
+        }
+
         @media (max-width: 768px) {
             .upload-page main {
                 padding: 16px !important;
@@ -78,14 +82,14 @@
 
                             <div class="col-md-3 mb-3 mb-md-0">
                                 <small class="text-muted">Total</small>
-                                <div class="font-weight-bold">
+                                <div class="font-weight-bold stat-highlight">
                                     <%= totalDocuments %> Documents
                                 </div>
                             </div>
 
                             <div class="col-md-3">
                                 <small class="text-muted">Total Size</small>
-                                <div class="font-weight-bold">
+                                <div class="font-weight-bold stat-highlight">
                                     <%= totalSize %> MB
                                 </div>
                             </div>
@@ -161,16 +165,13 @@
 
                 paginationControls.innerHTML = "";
 
-                // Jika tidak ada dokumen
                 if (totalItems === 0) return;
 
-                // Pastikan halaman aktif tidak melebihi jumlah halaman
                 currentPage = Math.min(Math.max(currentPage, 1), totalPages);
 
                 const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
                 const endIndex = startIndex + ITEMS_PER_PAGE;
 
-                // Tampilkan hanya 10 dokumen pada halaman aktif
                 docItems.forEach((item, index) => {
                     const isVisible = index >= startIndex && index < endIndex;
 
@@ -180,10 +181,8 @@
                     );
                 });
 
-                // Tidak menampilkan navigasi jika hanya satu halaman
                 if (totalPages <= 1) return;
 
-                // Previous
                 paginationControls.appendChild(
                     createPageButton(
                         "&laquo;",
@@ -192,7 +191,6 @@
                     )
                 );
 
-                // Nomor halaman
                 for (let page = 1; page <= totalPages; page++) {
                     paginationControls.appendChild(
                         createPageButton(
@@ -204,7 +202,6 @@
                     );
                 }
 
-                // Next
                 paginationControls.appendChild(
                     createPageButton(
                         "&raquo;",
@@ -214,7 +211,6 @@
                 );
             }
 
-            // Inisialisasi
             renderPagination();
 
         })();

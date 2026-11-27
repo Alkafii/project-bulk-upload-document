@@ -259,7 +259,7 @@
         $('#reviewPartner').text($('#institutionName').val().trim());
         $('#reviewApi').text($('#integrationType').val().trim());
         $('#reviewSize').text((getTotalSize() / 1048576).toFixed(2) + " MB");
-        $('#reviewDocCount').text(`${selected.length} document${selected.length > 1 ? 's' : ''}`);
+        $('#reviewDocCount').text(`${selected.length} Document${selected.length > 1 ? 's' : ''}`);
 
         currentModalPage = 1;
         renderModalDocuments();
@@ -287,7 +287,6 @@
                 throw new Error(result.message || "Upload gagal.");
             }
 
-            // Redirect hanya setelah session berhasil disimpan
             window.location.assign(result.redirectUrl);
 
         } catch (err) {

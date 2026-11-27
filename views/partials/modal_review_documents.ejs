@@ -23,7 +23,6 @@
         overflow: hidden; 
     }
 
-    /* BARU: Kontainer Utama Ringkasan Data Berbasis Grid Seimbang */
     #reviewModal .clean-summary-bar {
         background: #f8fafc;
         border: 1px solid #e2e8f0;
@@ -33,14 +32,12 @@
         flex-shrink: 0;
     }
 
-    /* MENYINKRONKAN: Memaksa baris kolom Bootstrap selalu lurus sejajar rata atas */
     #reviewModal .clean-summary-bar .row {
         display: flex;
         flex-wrap: wrap;
         align-items: start;
     }
 
-    /* MENYINKRONKAN: Mengubah arah aliran item agar ditarik lurus ke atas */
     #reviewModal .summary-item {
         display: flex;
         flex-direction: column;
@@ -64,16 +61,13 @@
         line-height: 1.4;
     }
 
-    /* Nilai angka statistik utama */
     #reviewModal .summary-value.stat-highlight {
         color: #1d4ed8;
-        font-size: 14px; /* Disamakan 14px agar tingginya presisi horizontal dengan kolom nama */
     }
 
-    /* Ornamen pembatas vertikal tipis khusus antar kolom Bootstrap agar elegan */
     #reviewModal .summary-col-divider {
         border-right: 1px solid #e2e8f0;
-        padding-bottom: 4px; /* Penyesuaian jarak ruang bawah agar presisi */
+        padding-bottom: 4px;
     }
 
     #reviewModal .review-list-wrapper {
@@ -231,10 +225,8 @@
             <div class="modal-body">
 
                 <div class="clean-summary-bar">
-                    <!-- Menambahkan class align-items-start langsung pada pembungkus baris Bootstrap -->
                     <div class="row align-items-start">
                         
-                        <!-- Kolom 1 (col-md-3) -->
                         <div class="col-md-3 summary-col-divider">
                             <div class="summary-item">
                                 <span class="summary-label">Partner Name</span>
@@ -242,7 +234,6 @@
                             </div>
                         </div>
                         
-                        <!-- Kolom 2 (col-md-3) -->
                         <div class="col-md-3 summary-col-divider">
                             <div class="summary-item pl-0 pl-md-2">
                                 <span class="summary-label">API Name</span>
@@ -250,15 +241,13 @@
                             </div>
                         </div>
 
-                        <!-- Kolom 3 (col-md-3) -->
                         <div class="col-md-3 summary-col-divider">
                             <div class="summary-item pl-0 pl-md-2">
-                                <span class="summary-label">Total Document</span>
+                                <span class="summary-label">Total</span>
                                 <span class="summary-value stat-highlight" id="reviewDocCount">0</span>
                             </div>
                         </div>
 
-                        <!-- Kolom 4 (col-md-3) -->
                         <div class="col-md-3">
                             <div class="summary-item pl-0 pl-md-2">
                                 <span class="summary-label">Total Size</span>
@@ -277,13 +266,11 @@
                     <small class="text-muted" id="reviewPageInfo"></small>
                 </div>
 
-                <!-- Kontainer Daftar Dokumen -->
                 <div class="review-list-wrapper">
                     <ul class="list-unstyled review-list" id="reviewDocList">
                     </ul>
                 </div>
 
-                <!-- Kontainer Kontrol Navigasi Pagination -->
                 <nav class="review-pagination" id="reviewPaginationContainer">
                     <ul class="pagination pagination-sm justify-content-left mb-0"
                         id="reviewPaginationControls">

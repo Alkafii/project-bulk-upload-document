@@ -35,14 +35,12 @@ function createDocumentFields(documents, prefix, isApi = false) {
 }
 
 export async function getDocumentConfig() {
-    // Ambil seluruh API Name beserta daftar dokumennya
     const result = await db.query(
         `SELECT name, document_names
          FROM document_name
          ORDER BY name ASC`
     );
 
-    // Konversi seluruh document_names menjadi array
     const apiDocuments = result.rows.map((row, index) => ({
         name: row.name,
         documents: normalizeDocuments(row.document_names),
@@ -53,7 +51,6 @@ export async function getDocumentConfig() {
         )
     }));
 
-    // Tetap pertahankan konfigurasi tiga kategori lama
     const documentsByCategory = {};
 
     for (const api of apiDocuments) {
@@ -74,7 +71,6 @@ export async function getDocumentConfig() {
             qris: createDocumentFields(qris, "qris", true)
         },
 
-        // Konfigurasi dinamis untuk seluruh API Name
         apiDocuments,
 
         functionality: createDocumentFields(
@@ -83,7 +79,6 @@ export async function getDocumentConfig() {
         )
     };
 
-    // Gabungkan seluruh nama field untuk kebutuhan Multer
     const requiredDocuments = [
         ...INTEGRATION_DOCUMENT,
         ...ASPI_DOCUMENT,
