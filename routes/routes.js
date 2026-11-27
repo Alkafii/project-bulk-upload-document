@@ -2,7 +2,6 @@ import express from "express";
 import db from "../config/database.js";
 import path from "node:path";
 import fs from "node:fs/promises";
-import { createReadStream } from "node:fs";
 import * as archiver from "archiver";
 import bcrypt from "bcrypt";
 import { randomUUID } from "node:crypto";
@@ -549,19 +548,16 @@ router.get("/download_zip", checkAuth, async (req, res) => {
   try {
     const id = Number(req.query.id);
 
-    // Validasi ID integrasi
     if (!Number.isInteger(id) || id <= 0) {
       return res.status(400).send("ID integrasi tidak valid.");
     }
 
-    // Pastikan integrasi tersedia
     const integration = await getIntegration(id);
 
     if (!integration) {
       return res.status(404).send("Data integrasi tidak ditemukan.");
     }
 
-    // Ambil SELURUH dokumen, tanpa pagination
     const result = await db.query(
       `SELECT
           d.id,
@@ -582,7 +578,6 @@ router.get("/download_zip", checkAuth, async (req, res) => {
       return res.status(404).send("Belum ada dokumen untuk diunduh.");
     }
 
-    // Validasi folder penyimpanan
     const folderPath = path.resolve(
       STORAGE_ROOT,
       integration.folder_name
@@ -601,13 +596,11 @@ router.get("/download_zip", checkAuth, async (req, res) => {
       return res.status(403).send("Akses folder ditolak.");
     }
 
-    // Periksa seluruh file sebelum membuat ZIP
     const files = [];
 
     for (const doc of documents) {
       const storedFilename = doc.stored_filename;
 
-      // Pastikan nama file tidak mengandung path
       if (
         !storedFilename ||
         path.basename(storedFilename) !== storedFilename
@@ -649,7 +642,6 @@ router.get("/download_zip", checkAuth, async (req, res) => {
       });
     }
 
-    // Buat nama file ZIP yang aman
     const safePartnerName = text(integration.name, 100)
       .replace(/[^\w\s-]/g, "")
       .trim()
@@ -663,7 +655,6 @@ router.get("/download_zip", checkAuth, async (req, res) => {
     const zipFilename =
       `${safePartnerName}_${safeApiName}_Documents.zip`;
 
-    // Hindari nama dokumen yang sama di dalam ZIP
     const usedNames = new Set();
 
     function getUniqueFilename(filename) {
@@ -683,7 +674,6 @@ router.get("/download_zip", checkAuth, async (req, res) => {
       return uniqueName;
     }
 
-    // Siapkan response download
     res.setHeader(
       "Content-Type",
       "application/zip"
@@ -699,8 +689,7 @@ router.get("/download_zip", checkAuth, async (req, res) => {
       "nosniff"
     );
 
-    // Buat archive ZIP
-    archive = archiver("zip", {
+    archive = new archiver.ZipArchive({
       zlib: {
         level: 6
       }
@@ -728,10 +717,8 @@ router.get("/download_zip", checkAuth, async (req, res) => {
       }
     });
 
-    // Hubungkan archive ke response
     archive.pipe(res);
 
-    // Masukkan seluruh dokumen ke ZIP
     for (const file of files) {
       const archiveFilename = getUniqueFilename(
         file.originalFilename
@@ -742,7 +729,6 @@ router.get("/download_zip", checkAuth, async (req, res) => {
       });
     }
 
-    // Mulai proses pembuatan ZIP
     await archive.finalize();
 
   } catch (err) {
