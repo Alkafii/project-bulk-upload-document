@@ -8,6 +8,7 @@
     "start": "node index.js"
   },
   "dependencies": {
+    "archiver": "^8.0.0",
     "axios": "^1.21.1",
     "bcrypt": "^6.0.0",
     "body-parser": "^2.4.0",
