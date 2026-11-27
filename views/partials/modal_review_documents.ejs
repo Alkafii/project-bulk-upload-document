@@ -3,63 +3,89 @@
         border: 0;
         border-radius: 16px;
         overflow: hidden;
+        height: 680px;
+        display: flex;
+        flex-direction: column;
+        background: #ffffff;
     }
 
     #reviewModal .modal-header {
         padding: 20px 24px;
-        border-bottom: 1px solid #edf0f4;
+        border-bottom: 1px solid #f1f5f9;
+        flex-shrink: 0;
     }
 
     #reviewModal .modal-body {
-        padding: 22px 24px;
-        max-height: 75vh;
-        overflow-y: auto;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+        overflow: hidden; 
     }
 
-    #reviewModal .review-info {
-        background: #f8faff;
-        border: 1px solid #e8eef8;
-        border-radius: 10px;
-        padding: 14px 16px;
-        margin-bottom: 18px;
+    /* BARU: Kontainer Utama Ringkasan Data Berbasis Grid Seimbang */
+    #reviewModal .clean-summary-bar {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 16px 24px;
+        margin-bottom: 24px;
+        flex-shrink: 0;
     }
 
-    #reviewModal .review-info-label {
-        color: #718096;
-        font-size: 12px;
-        margin-bottom: 4px;
+    /* MENYINKRONKAN: Memaksa baris kolom Bootstrap selalu lurus sejajar rata atas */
+    #reviewModal .clean-summary-bar .row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: start;
     }
 
-    #reviewModal .review-info-value {
-        color: #26364a;
-        font-weight: 600;
-        overflow-wrap: anywhere;
+    /* MENYINKRONKAN: Mengubah arah aliran item agar ditarik lurus ke atas */
+    #reviewModal .summary-item {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
     }
 
-    #reviewModal .review-stat {
-        background: #f8faff;
-        border: 1px solid #e8eef8;
-        border-radius: 10px;
-        padding: 12px 15px;
-        height: 100%;
-    }
-
-    #reviewModal .review-stat-label {
-        color: #718096;
-        font-size: 12px;
-        margin-bottom: 4px;
-    }
-
-    #reviewModal .review-stat-value {
-        color: #2563eb;
-        font-size: 19px;
+    #reviewModal .summary-label {
+        color: #64748b;
+        font-size: 11px;
         font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        margin-bottom: 5px;
+    }
+
+    #reviewModal .summary-value {
+        color: #0f172a;
+        font-weight: 700;
+        font-size: 14px;
+        overflow-wrap: anywhere;
+        line-height: 1.4;
+    }
+
+    /* Nilai angka statistik utama */
+    #reviewModal .summary-value.stat-highlight {
+        color: #1d4ed8;
+        font-size: 14px; /* Disamakan 14px agar tingginya presisi horizontal dengan kolom nama */
+    }
+
+    /* Ornamen pembatas vertikal tipis khusus antar kolom Bootstrap agar elegan */
+    #reviewModal .summary-col-divider {
+        border-right: 1px solid #e2e8f0;
+        padding-bottom: 4px; /* Penyesuaian jarak ruang bawah agar presisi */
+    }
+
+    #reviewModal .review-list-wrapper {
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        flex-grow: 1;
+        overflow-y: auto;
+        background: #fff;
+        margin-bottom: 0;
     }
 
     #reviewModal .review-list {
-        border: 1px solid #e5eaf1;
-        border-radius: 10px;
-        overflow: hidden;
         margin-bottom: 0;
     }
 
@@ -127,17 +153,35 @@
     }
 
     #reviewModal .review-pagination {
-        margin-top: 16px;
+        padding-top: 14px;
+        padding-bottom: 2px;
+        flex-shrink: 0;
     }
 
     #reviewModal .modal-footer {
         padding: 15px 24px;
-        border-top: 1px solid #edf0f4;
+        border-top: 1px solid #f1f5f9;
+        flex-shrink: 0;
+        background: #fff;
+    }
+
+    @media (max-width: 768px) {
+        #reviewModal .summary-col-divider {
+            border-right: 0;
+            border-bottom: 1px dashed #e2e8f0;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
     }
 
     @media (max-width: 576px) {
         #reviewModal .modal-dialog {
             margin: 10px;
+        }
+
+        #reviewModal .modal-content {
+            height: auto;
+            max-height: 90vh;
         }
 
         #reviewModal .modal-header {
@@ -146,7 +190,6 @@
 
         #reviewModal .modal-body {
             padding: 16px;
-            max-height: 75vh;
         }
 
         #reviewModal .modal-footer {
@@ -155,10 +198,6 @@
 
         #reviewModal .review-item {
             padding: 11px;
-        }
-
-        #reviewModal .review-type {
-            margin-top: 7px;
         }
     }
 </style>
@@ -175,11 +214,11 @@
                 <div>
                     <h5 class="modal-title font-weight-bold text-primary mb-1"
                         id="reviewModalLabel">
-                        Review Dokumen
+                        Upload Confirmation
                     </h5>
 
                     <small class="text-muted">
-                        Periksa kembali dokumen sebelum menyimpan perubahan.
+                        Review the document before saving changes.
                     </small>
                 </div>
 
@@ -191,56 +230,62 @@
 
             <div class="modal-body">
 
-                <div class="review-info">
-                    <div class="row">
-                        <div class="col-md-6 mb-3 mb-md-0">
-                            <div class="review-info-label">Partner Name</div>
-                            <div class="review-info-value" id="reviewPartner">-</div>
+                <div class="clean-summary-bar">
+                    <!-- Menambahkan class align-items-start langsung pada pembungkus baris Bootstrap -->
+                    <div class="row align-items-start">
+                        
+                        <!-- Kolom 1 (col-md-3) -->
+                        <div class="col-md-3 summary-col-divider">
+                            <div class="summary-item">
+                                <span class="summary-label">Partner Name</span>
+                                <span class="summary-value" id="reviewPartner">-</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Kolom 2 (col-md-3) -->
+                        <div class="col-md-3 summary-col-divider">
+                            <div class="summary-item pl-0 pl-md-2">
+                                <span class="summary-label">API Name</span>
+                                <span class="summary-value" id="reviewApi">-</span>
+                            </div>
                         </div>
 
-                        <div class="col-md-6">
-                            <div class="review-info-label">API Name</div>
-                            <div class="review-info-value" id="reviewApi">-</div>
+                        <!-- Kolom 3 (col-md-3) -->
+                        <div class="col-md-3 summary-col-divider">
+                            <div class="summary-item pl-0 pl-md-2">
+                                <span class="summary-label">Total Document</span>
+                                <span class="summary-value stat-highlight" id="reviewDocCount">0</span>
+                            </div>
                         </div>
+
+                        <!-- Kolom 4 (col-md-3) -->
+                        <div class="col-md-3">
+                            <div class="summary-item pl-0 pl-md-2">
+                                <span class="summary-label">Total Size</span>
+                                <span class="summary-value stat-highlight" id="reviewSize">0 MB</span>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
-                <div class="row mb-4">
-                    <div class="col-6">
-                        <div class="review-stat">
-                            <div class="review-stat-label">Total Dokumen</div>
-                            <div class="review-stat-value">
-                                <span id="reviewDocCount">0</span>
-                                <small style="font-size: 12px; color: #718096;">
-                                    file
-                                </small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-6">
-                        <div class="review-stat">
-                            <div class="review-stat-label">Total Ukuran</div>
-                            <div class="review-stat-value" id="reviewSize">
-                                0 MB
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="d-flex justify-content-between align-items-center mb-2 flex-shrink-0">
                     <h6 class="font-weight-bold mb-0">
-                        Daftar Dokumen
+                        Document List
                     </h6>
 
                     <small class="text-muted" id="reviewPageInfo"></small>
                 </div>
 
-                <ul class="list-unstyled review-list" id="reviewDocList">
-                </ul>
+                <!-- Kontainer Daftar Dokumen -->
+                <div class="review-list-wrapper">
+                    <ul class="list-unstyled review-list" id="reviewDocList">
+                    </ul>
+                </div>
 
+                <!-- Kontainer Kontrol Navigasi Pagination -->
                 <nav class="review-pagination" id="reviewPaginationContainer">
-                    <ul class="pagination pagination-sm justify-content-center mb-0"
+                    <ul class="pagination pagination-sm justify-content-left mb-0"
                         id="reviewPaginationControls">
                     </ul>
                 </nav>
@@ -257,10 +302,9 @@
                 <button type="button"
                         id="confirmSubmitBtn"
                         class="btn btn-primary font-weight-bold px-4">
-                    Confirm
+                    Upload
                 </button>
             </div>
-
         </div>
     </div>
 </div>
