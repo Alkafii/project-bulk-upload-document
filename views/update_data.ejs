@@ -811,6 +811,28 @@
                 nextItem.append(nextButton);
                 paginationControls.append(nextItem);
             }
+
+            const dynamicErrorMessage = document.getElementById("dynamicErrorMessage");
+            const dynamicErrorText = document.getElementById("dynamicErrorText");
+            const closeDynamicError = document.getElementById("closeDynamicError");
+
+            function showErrorMessage(message) {
+                dynamicErrorText.textContent = message;
+
+                dynamicErrorMessage.classList.remove("d-none");
+
+                dynamicErrorMessage.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center"
+                });
+            }
+
+            function hideErrorMessage() {
+                dynamicErrorMessage.classList.add("d-none");
+                dynamicErrorText.textContent = "";
+            }
+
+            closeDynamicError.addEventListener("click", hideErrorMessage);
         })();
     </script>
     
