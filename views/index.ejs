@@ -32,7 +32,9 @@
                                     <tr>
                                         <th class="pl-4 align-middle" style="width: 90px;">
                                             <div class="d-flex align-items-center justify-content-start">
-                                                <div style="width: 32px;" class="flex-shrink: 0;"></div>
+                                                <div style="width: 40px;" class="flex-shrink: 0;">
+                                                    <input type="checkbox" id="check" class="check" aria-label="..." />
+                                                </div>
                                                 <span class="pl-1">No</span>
                                             </div>
                                         </th>
@@ -73,25 +75,51 @@
 
     <script>
         $(document).ready(function() {
-            $('.form-check-input.check').on('change', function() {
-                const checkedCount = $('.form-check-input.check:checked').length;
-                
-                if (checkedCount > 0) {
-                    $('#btnBulkDelete').removeClass('d-none');
+            "use strict";
+
+            const $checkAll = $('#check');
+            const $btnBulkDelete = $('#btnBulkDelete');
+            const $selectedList = $('#selectedItemsList');
+            const $confirmDeleteBtn = $('#confirmDeleteBtn');
+
+            function updateBulkDeleteVisibility() {
+                const totalRowCheckboxes = $('.form-check-input.check').length;
+                const checkedRowCheckboxes = $('.form-check-input.check:checked').length;
+
+                if (checkedRowCheckboxes > 0) {
+                    $btnBulkDelete.removeClass('d-none');
                 } else {
-                    $('#btnBulkDelete').addClass('d-none');
+                    $btnBulkDelete.addClass('d-none');
                 }
+
+                if (totalRowCheckboxes > 0 && checkedRowCheckboxes === totalRowCheckboxes) {
+                    $checkAll.prop('checked', true);
+                } else {
+                    $checkAll.prop('checked', false);
+                }
+            }
+            
+            $checkAll.on('change', function() {
+                const isHeaderChecked = $(this).is(':checked');
+                
+                $('.form-check-input.check').prop('checked', isHeaderChecked);
+                
+                updateBulkDeleteVisibility();
             });
 
-            $('#btnBulkDelete').on('click', function(e) {
+            $(document).on('change', '.form-check-input.check', function() {
+                updateBulkDeleteVisibility();
+            });
+
+            $btnBulkDelete.on('click', function(e) {
                 e.preventDefault();
                 const $checkedBoxes = $('.form-check-input.check:checked');
                 
-                $('#selectedItemsList').empty();
+                $selectedList.empty();
                 
                 $checkedBoxes.each(function() {
                     const name = $(this).data('name');
-                    $('#selectedItemsList').append(`<li>${name}</li>`);
+                    $selectedList.append(`<li>${name}</li>`);
                 });
 
                 const selectedIds = $checkedBoxes.map(function() {
@@ -99,7 +127,7 @@
                 }).get().join(',');
 
                 if (selectedIds) {
-                    $('#confirmDeleteBtn').attr('href', `/delete?id=${selectedIds}`);
+                    $confirmDeleteBtn.attr('href', `/delete?id=${selectedIds}`);
                     $('#deleteModal').modal('show');
                 }
             });

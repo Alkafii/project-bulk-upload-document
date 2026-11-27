@@ -5,44 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Detail Integration Documents</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
-    <style>
-        .upload-page {
-            min-height: 100vh;
-        }
-
-        .upload-container {
-            max-width: 1050px;
-            width: 100%; 
-        }
-
-        .upload-container {
-            max-width: 100%;
-        }
-
-        .main-doc-item.pagination-hidden {
-            display: none !important;
-        }
-
-        .stat-highlight {
-            color: #1d4ed8;
-        }
-
-        @media (max-width: 768px) {
-            .upload-page main {
-                padding: 16px !important;
-            }
-            .upload-container {
-                padding-left: 0;
-                padding-right: 0;
-            }
-        }
-
-        @media (max-width: 576px) {
-            .upload-card-body {
-                padding: 16px !important;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="/style/style.css">
 </head>
 <body class="bg-light">
     <div class="d-flex upload-page">
@@ -82,14 +45,14 @@
 
                             <div class="col-md-3 mb-3 mb-md-0">
                                 <small class="text-muted">Total</small>
-                                <div class="font-weight-bold stat-highlight">
+                                <div class="font-weight-bold blue-muted">
                                     <%= totalDocuments %> Documents
                                 </div>
                             </div>
 
                             <div class="col-md-3">
                                 <small class="text-muted">Total Size</small>
-                                <div class="font-weight-bold stat-highlight">
+                                <div class="font-weight-bold blue-muted">
                                     <%= totalSize %> MB
                                 </div>
                             </div>

@@ -1,43 +1,5 @@
-<style>
-  .file-row {
-    border: 1px solid #e2e8f0;
-    border-radius: 9px;
-    padding: 14px;
-    margin-bottom: 10px;
-    background: #fff;
-  }
+<link rel="stylesheet" href="/style/style.css">
 
-  .file-row .file-name {
-    font-size: 13px;
-    color: #64748b;
-    word-break: break-all;
-  }
-
-  .file-row .document-name-label {
-    font-size: 14px;
-    min-width: 110px;
-    margin-top: 5px; 
-    display: inline-block;
-  }
-
-  .file-row .delete-btn-wrapper {
-    margin-top: 0px;
-  }
-
-  @media (max-width: 576px) {
-    .file-row {
-      padding: 12px;
-    }
-
-    .file-row .document-row-content {
-      gap: 10px;
-    }
-
-    .file-row .remove-file {
-      flex-shrink: 0;
-    }
-  }
-</style>
 <template id="documentListItemTemplate">
   <div class="file-row">
     <div class="row align-items-start no-gutters document-row-content">

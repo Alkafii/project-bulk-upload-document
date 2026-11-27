@@ -15,7 +15,6 @@ import {
 
 const router = express.Router();
 const STORAGE_ROOT = path.resolve(process.cwd(), "data", "uploaded_file");
-const allowedExt = new Set([".pdf", ".doc", ".docx", ".xls", ".xlsx"]);
 
 function checkAuth(req, res, next) {
   if (req.session?.userId) return next();
@@ -196,7 +195,10 @@ router.get("/", checkAuth, async (req, res) => {
 
                                   <td class="text-center">
                                       <span class="badge badge-primary px-2 py-1">
-                                          ${Number(item.uploaded_count || 0)}
+                                          ${(() => {
+                                              const count = Number(item.uploaded_count || 0);
+                                              return `${count} ${count <= 1 ? 'Document' : 'Documents'}`;
+                                          })()}
                                       </span>
                                   </td>
 
