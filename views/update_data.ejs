@@ -111,10 +111,18 @@
                                 <%- documentsHTML %>
                             </div>
 
-                            <nav class="mt-4">
-                                <ul class="pagination pagination-sm justify-content-left mb-0" id="mainPaginationControls"></ul>
-                            </nav>
+                            <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap">
+                                <nav>
+                                    <ul class="pagination pagination-sm mb-0" id="mainPaginationControls"></ul>
+                                </nav>
 
+                                <button
+                                    type="button"
+                                    id="updateBtn"
+                                    class="btn btn-primary btn-sm d-none mt-2 mt-md-0">
+                                    Update
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -132,8 +140,16 @@
                     </div>
 
                     <div class="d-flex justify-content-end mt-4 upload-actions">
-                        <a href="/read_data?id=<%= integration.id %>" class="btn btn-light mr-2">Cancel</a>
-                        <button type="submit" id="saveBtn" class="btn btn-primary">Save</button>
+                        <a href="/read_data?id=<%= integration.id %>" class="btn btn-light mr-2">
+                            Cancel
+                        </a>
+
+                        <button
+                            type="button"
+                            id="saveBtn"
+                            class="btn btn-primary d-none">
+                            Save
+                        </button>
                     </div>
                 </form>
             </div>
@@ -159,8 +175,20 @@
         (() => {
             "use strict";
 
-            const form = document.getElementById('editForm'), input = document.getElementById('newInput');
-            const drop = document.getElementById('dropzone'), list = document.getElementById('newList'), save = document.getElementById('saveBtn');
+            const form = document.getElementById('editForm');
+            const input = document.getElementById('newInput');
+
+            const drop = document.getElementById('dropzone');
+            const list = document.getElementById('newList');
+
+            const save = document.getElementById('saveBtn');
+            const update = document.getElementById('updateBtn');
+
+            const institutionInput = form.querySelector('[name="institutionName"]');
+            const integrationInput = form.querySelector('[name="integrationType"]');
+
+            const originalInstitution = institutionInput.value.trim();
+            const originalIntegration = integrationInput.value.trim();
 
             const maxFile = Number('<%= maxMB * 1024 * 1024 %>'), maxTotal = Number('<%= maxTotalMB * 1024 * 1024 %>'), maxFiles = Number('<%= maxFiles %>');
             const allowed = ['pdf', 'doc', 'docx', 'xls', 'xlsx'];
@@ -178,19 +206,90 @@
             const nameOf = f => f.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim();
             const getAddedTotalSize = () => added.reduce((sum, item) => sum + item.file.size, 0);
 
+            function updateActionButtons() {
+                const selectedDeletes = document.querySelectorAll(
+                    ".delete-doc:checked"
+                );
+
+                // Periksa file Replace
+                const selectedReplacements = Array.from(
+                    document.querySelectorAll(".replacement-file")
+                ).filter(function(fileInput) {
+                    return fileInput.files.length > 0;
+                });
+
+                // Periksa perubahan Partner Name dan API Name
+                const partnerChanged =
+                    institutionInput.value.trim() !== originalInstitution;
+
+                const apiChanged =
+                    integrationInput.value.trim() !== originalIntegration;
+
+                // Update muncul jika ada perubahan dokumen lama atau informasi integrasi
+                const hasUpdateChanges =
+                    selectedDeletes.length > 0 ||
+                    selectedReplacements.length > 0 ||
+                    partnerChanged ||
+                    apiChanged;
+
+                if (hasUpdateChanges) {
+                    update.classList.remove("d-none");
+                } else {
+                    update.classList.add("d-none");
+                }
+
+                // Save hanya muncul jika ada dokumen baru
+                if (added.length > 0) {
+                    save.classList.remove("d-none");
+                } else {
+                    save.classList.add("d-none");
+                }
+            }
+
             function render() {
                 list.innerHTML = '';
+
                 added.forEach((item, index) => {
                     const row = document.createElement('div');
-                    row.className = 'doc-row';
-                    row.innerHTML = `<label class="small font-weight-bold">Nama dokumen</label>
-                        <div class="d-flex"><input class="form-control form-control-sm mr-2" maxlength="255" value="${item.name}"><button type="button" class="btn btn-sm btn-outline-danger">Hapus</button></div>
-                        <div class="small text-muted mt-1">${item.file.name} · ${fmt(item.file.size)}</div>`;
 
-                    row.querySelector('input').addEventListener('input', e => item.name = e.target.value);
-                    row.querySelector('button').addEventListener('click', () => { added.splice(index, 1); render(); });
+                    row.className = 'doc-row';
+
+                    row.innerHTML = `
+                        <label class="small font-weight-bold">
+                            Nama dokumen
+                        </label>
+
+                        <div class="d-flex">
+                            <input
+                                class="form-control form-control-sm mr-2"
+                                maxlength="255"
+                                value="${item.name}">
+
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-danger">
+                                Hapus
+                            </button>
+                        </div>
+
+                        <div class="small text-muted mt-1">
+                            ${item.file.name} · ${fmt(item.file.size)}
+                        </div>
+                    `;
+
+                    row.querySelector('input').addEventListener('input', function(event) {
+                        item.name = event.target.value;
+                    });
+
+                    row.querySelector('button').addEventListener('click', function() {
+                        added.splice(index, 1);
+                        render();
+                    });
+
                     list.appendChild(row);
                 });
+
+                updateActionButtons();
             }
 
             function addFiles(files) {
@@ -218,31 +317,87 @@
                 if (label) label.textContent = this.files.length ? this.files[0].name : "Choose file or drag here...";
             });
 
+            $(form).on("change", ".delete-doc", function() {
+                updateActionButtons();
+            });
+
+            // Perubahan file Replace
+            $(form).on("change", ".replacement-file", function() {
+                const hidden = this.parentElement.querySelector('input[type="hidden"]');
+
+                if (hidden) {
+                    hidden.disabled = !this.files.length;
+                }
+
+                const label = this.parentElement.querySelector('.custom-file-label');
+
+                if (label) {
+                    if (this.files.length > 0) {
+                        label.textContent = this.files[0].name;
+                    } else {
+                        label.textContent = "Choose file or drag here...";
+                    }
+                }
+
+                updateActionButtons();
+            });
+
+            // Perubahan Partner Name dan API Name
+            institutionInput.addEventListener("input", updateActionButtons);
+            integrationInput.addEventListener("input", updateActionButtons);
+
             let currentDeleteIds = [];
 
-            function submitUpdateData() {
+            function submitUpdateData(action) {
                 const data = new FormData(form);
 
+                // Hapus seluruh data dokumen baru dan ID penggantian
+                // agar tidak ada data lama yang terkirim secara tidak sengaja.
                 data.delete("newDocuments");
                 data.delete("newDocumentNames");
                 data.delete("replacementDocumentIds");
 
-                // Tambahkan dokumen baru
-                for (const item of added) {
-                    data.append("newDocuments", item.file, item.file.name);
-                    data.append("newDocumentNames", item.name.trim());
-                }
+                if (action === "update") {
 
-                // Tambahkan ID dokumen yang diganti
-                for (const fileInput of currentReplacements) {
-                    data.append(
-                        "replacementDocumentIds",
-                        fileInput.dataset.id
-                    );
-                }
+                    // Update hanya memproses dokumen lama.
+                    // Dokumen baru tidak ikut dikirim.
+                    data.delete("newDocuments");
+                    data.delete("newDocumentNames");
 
-                save.disabled = true;
-                save.textContent = "Saving...";
+                    for (const fileInput of currentReplacements) {
+                        data.append(
+                            "replacementDocumentIds",
+                            fileInput.dataset.id
+                        );
+                    }
+
+                    update.disabled = true;
+                    update.textContent = "Updating...";
+
+                } else if (action === "save") {
+
+                    // Save hanya memproses dokumen baru.
+                    // Hapus data Delete dan Replace dari FormData.
+                    data.delete("deleteDocumentIds");
+                    data.delete("replacementFiles");
+                    data.delete("replacementDocumentIds");
+
+                    for (const item of added) {
+                        data.append(
+                            "newDocuments",
+                            item.file,
+                            item.file.name
+                        );
+
+                        data.append(
+                            "newDocumentNames",
+                            item.name.trim()
+                        );
+                    }
+
+                    save.disabled = true;
+                    save.textContent = "Saving...";
+                }
 
                 fetch(form.action, {
                     method: "POST",
@@ -251,7 +406,7 @@
                         "X-Requested-With": "XMLHttpRequest"
                     }
                 })
-                .then(async function (response) {
+                .then(async function(response) {
                     const result = await response.json();
 
                     if (!response.ok) {
@@ -267,8 +422,11 @@
 
                     throw new Error("Respons server tidak valid.");
                 })
-                .catch(function (err) {
-                    alert(err.message);
+                .catch(function(error) {
+                    alert(error.message);
+
+                    update.disabled = false;
+                    update.textContent = "Update";
 
                     save.disabled = false;
                     save.textContent = "Save";
@@ -289,61 +447,76 @@
                 $("#reviewModal").modal("show");
             }
 
-            form.addEventListener("submit", function (event) {
+            let currentAction = "";
+
+            form.addEventListener("submit", function(event) {
                 event.preventDefault();
+            });
+
+
+            // ========================================
+            // PROSES UPDATE DOKUMEN LAMA
+            // ========================================
+
+            function startUpdate() {
 
                 const replacements = Array.from(
                     document.querySelectorAll(".replacement-file")
-                ).filter(fileInput => fileInput.files.length > 0);
+                ).filter(function(fileInput) {
+                    return fileInput.files.length > 0;
+                });
 
                 const deletes = Array.from(
                     document.querySelectorAll(".delete-doc:checked")
                 );
 
-                const deleteIds = deletes.map(item => item.value);
+                const deleteIds = deletes.map(function(item) {
+                    return item.value;
+                });
 
-                // Validasi konflik hapus dan ganti
-                if (replacements.some(fileInput => deleteIds.includes(fileInput.dataset.id))) {
+                // Cegah dokumen yang sama dihapus dan diganti
+                if (replacements.some(function(fileInput) {
+                    return deleteIds.includes(fileInput.dataset.id);
+                })) {
                     alert("Dokumen yang sama tidak bisa dihapus dan diganti sekaligus.");
                     return;
                 }
 
-                if (replacements.length + added.length > maxFiles) {
-                    alert("Maksimal " + maxFiles + " file perubahan per proses.");
+                if (replacements.length > maxFiles) {
+                    alert("Maksimal " + maxFiles + " file pengganti.");
                     return;
                 }
 
-                if (added.some(item => !item.name.trim())) {
-                    alert("Nama dokumen baru tidak boleh kosong.");
+                const replacementSize = replacements.reduce(
+                    function(total, fileInput) {
+                        return total + fileInput.files[0].size;
+                    },
+                    0
+                );
+
+                if (replacementSize > maxTotal) {
+                    alert("Total ukuran file pengganti melebihi batas.");
                     return;
                 }
 
-                const totalSize =
-                    getAddedTotalSize() +
-                    replacements.reduce(function (sum, fileInput) {
-                        return sum + fileInput.files[0].size;
-                    }, 0);
-
-                if (totalSize > maxTotal) {
-                    alert("Total ukuran file melebihi batas.");
-                    return;
-                }
-
-                if (replacements.some(fileInput => fileInput.files[0].size > maxFile)) {
+                if (replacements.some(function(fileInput) {
+                    return fileInput.files[0].size > maxFile;
+                })) {
                     alert("Ukuran salah satu file pengganti melebihi batas.");
                     return;
                 }
 
-                currentDeleteIds = deleteIds;
+                currentAction = "update";
                 currentReplacements = replacements;
 
                 // Jika ada dokumen yang akan dihapus
                 if (deletes.length > 0) {
+
                     const deleteList = $("#deleteDocumentsList").empty();
 
                     for (const checkbox of deletes) {
-                        const docRow = checkbox.closest(".main-doc-item");
 
+                        const docRow = checkbox.closest(".main-doc-item");
                         const nameElement = docRow.querySelector(".document-name");
 
                         let docName = "Nama dokumen tidak ditemukan";
@@ -361,29 +534,93 @@
                     return;
                 }
 
-                // Jika ada dokumen baru atau pengganti
-                if (added.length > 0 || replacements.length > 0) {
+                // Jika hanya ada file pengganti
+                if (replacements.length > 0) {
                     showReviewModal();
                     return;
                 }
 
                 // Jika hanya mengubah Partner Name atau API Name
-                submitUpdateData();
+                submitUpdateData("update");
+            }
+
+
+            // ========================================
+            // PROSES SAVE DOKUMEN BARU
+            // ========================================
+
+            function startSave() {
+
+                if (added.length === 0) {
+                    return;
+                }
+
+                if (added.some(function(item) {
+                    return !item.name.trim();
+                })) {
+                    alert("Nama dokumen baru tidak boleh kosong.");
+                    return;
+                }
+
+                if (added.length > maxFiles) {
+                    alert("Maksimal " + maxFiles + " dokumen baru.");
+                    return;
+                }
+
+                if (getAddedTotalSize() > maxTotal) {
+                    alert("Total ukuran dokumen baru melebihi batas.");
+                    return;
+                }
+
+                currentAction = "save";
+                currentReplacements = [];
+
+                showReviewModal();
+            }
+
+
+            // ========================================
+            // EVENT TOMBOL UPDATE DAN SAVE
+            // ========================================
+
+            update.addEventListener("click", function() {
+                startUpdate();
             });
 
-            // Konfirmasi penghapusan
-            $("#confirmDeleteDocumentsBtn").on("click", function (event) {
+            save.addEventListener("click", function() {
+                startSave();
+            });
+
+
+            // ========================================
+            // KONFIRMASI DELETE
+            // ========================================
+
+            $("#confirmDeleteDocumentsBtn").on("click", function(event) {
+
                 event.preventDefault();
 
                 $("#deleteDocumentsModal").modal("hide");
 
-                // Jika ada dokumen baru atau pengganti, tampilkan review berikutnya
-                if (added.length > 0 || currentReplacements.length > 0) {
+                // Setelah konfirmasi delete, periksa apakah ada file pengganti.
+                if (currentAction === "update" && currentReplacements.length > 0) {
                     showReviewModal();
                     return;
                 }
 
-                submitUpdateData();
+                submitUpdateData("update");
+            });
+
+
+            // ========================================
+            // KONFIRMASI REVIEW DOCUMENTS
+            // ========================================
+
+            $("#confirmSubmitBtn").on("click", function() {
+
+                $("#reviewModal").modal("hide");
+
+                submitUpdateData(currentAction);
             });
 
             // Konfirmasi penambahan/pergantian dokumen
@@ -412,6 +649,8 @@
 
             renderMainPagePagination();
 
+            updateActionButtons();
+
             function renderModalDocuments() {
                 const reviewDocList = $("#reviewDocList");
                 const paginationControls = $("#reviewPaginationControls");
@@ -422,20 +661,49 @@
                 let reviewDocuments = [];
                 let totalSize = 0;
 
-                // 1. Ambil dokumen baru
-                for (const item of added) {
-                    reviewDocuments.push({
-                        name: item.name,
-                        fileName: item.file.name,
-                        size: item.file.size,
-                        type: "Dokumen Baru"
-                    });
+                if (currentAction === "save") {
+                    for (const item of added) {
+                        reviewDocuments.push({
+                            name: item.name,
+                            fileName: item.file.name,
+                            size: item.file.size,
+                            type: "Dokumen Baru"
+                        });
 
-                    totalSize += item.file.size;
+                        totalSize += item.file.size;
+                    }
+
+                } else if (currentAction === "update") {
+
+                    // Hanya tampilkan dokumen pengganti
+                    for (const fileInput of currentReplacements) {
+
+                        if (fileInput.files.length > 0) {
+
+                            const file = fileInput.files[0];
+                            const docRow = fileInput.closest(".main-doc-item");
+
+                            let documentName = "Dokumen";
+
+                            if (docRow) {
+                                const nameElement = docRow.querySelector(".document-name");
+
+                                if (nameElement) {
+                                    documentName = nameElement.textContent.trim();
+                                }
+                            }
+
+                            reviewDocuments.push({
+                                name: documentName,
+                                fileName: file.name,
+                                size: file.size,
+                                type: "Penggantian Dokumen"
+                            });
+
+                            totalSize += file.size;
+                        }
+                    }
                 }
-
-                // 2. Ambil dokumen pengganti
-                const replacementInputs = document.querySelectorAll(".replacement-file");
 
                 for (const fileInput of replacementInputs) {
                     if (fileInput.files.length > 0) {
