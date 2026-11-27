@@ -661,33 +661,15 @@ router.get("/update_data", checkAuth, async (req, res) => {
       }
     }
 
-    let alertHTML = "";
-
-    const message = req.flash("success")[0] || "";
+    const successMessage = req.flash("success")[0] || "";
     const errorMessage = req.flash("error")[0] || "";
-
-    if (message) {
-      alertHTML += `
-        <div class="alert alert-success">
-          ${escapeHTML(message)}
-        </div>
-      `;
-    }
-
-    if (errorMessage) {
-      alertHTML += `
-        <div class="alert alert-danger">
-          ${escapeHTML(errorMessage)}
-        </div>
-      `;
-    }
 
     return res.render("update_data.ejs", {
         integration,
         totalDocuments: documents.length,
         documentsHTML,
-        successMessage: req.flash("success")[0] || "",
-        errorMessage: req.flash("error")[0] || "",
+        successMessage,
+        errorMessage,
         maxMB: MAX_MB,
         maxFiles: MAX_FILES,
         maxTotalMB: MAX_TOTAL_MB

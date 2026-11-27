@@ -394,7 +394,7 @@
                     throw new Error("Respons server tidak valid.");
                 })
                 .catch(function(error) {
-                    showErrorMessage(error.message);
+                    showAlertMessage(error.message, "error");
 
                     update.disabled = false;
                     update.textContent = "Update";
@@ -443,7 +443,10 @@
                 if (replacements.some(function(fileInput) {
                     return deleteIds.includes(fileInput.dataset.id);
                 })) {
-                    showAlertMessage("Pesan error", "error");
+                    showAlertMessage(
+                        "Dokumen yang sama tidak bisa dihapus dan diganti sekaligus.",
+                        "error"
+                    );
 
                     return;
                 }
@@ -810,29 +813,6 @@
                 paginationControls.append(nextItem);
             }
 
-            const dynamicErrorMessage = document.getElementById("dynamicErrorMessage");
-            const dynamicErrorText = document.getElementById("dynamicErrorText");
-            const closeDynamicError = document.getElementById("closeDynamicError");
-
-            function showErrorMessage(message) {
-                dynamicErrorText.textContent = message;
-
-                dynamicErrorMessage.classList.remove("d-none");
-
-                dynamicErrorMessage.scrollIntoView({
-                    behavior: "smooth",
-                    block: "center"
-                });
-            }
-
-            function hideErrorMessage() {
-                dynamicErrorMessage.classList.add("d-none");
-                dynamicErrorText.textContent = "";
-            }
-
-            closeDynamicError.addEventListener("click", hideErrorMessage);
-
-
             const alertMessage = document.getElementById("alertMessage");
             const alertText = document.getElementById("alertText");
             const closeAlert = document.getElementById("closeAlert");
@@ -864,6 +844,14 @@
             }
 
             closeAlert.addEventListener("click", hideAlertMessage);
+
+            // Menampilkan pesan dari server jika tersedia.
+            const initialMessage = alertMessage.dataset.message;
+            const initialType = alertMessage.dataset.type;
+
+            if (initialMessage) {
+                showAlertMessage(initialMessage, initialType);
+            }
         })();
     </script>
     
