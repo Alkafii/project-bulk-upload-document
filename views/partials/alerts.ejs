@@ -1,29 +1,25 @@
 <div class="py-2 px-0 w-100 overflow-visible">
-
-    <% if (typeof successMessage !== 'undefined' && successMessage) { %>
-        <div class="alert alert-success alert-dismissible fade show w-100 text-center mb-4 shadow-sm" role="alert">
-            <strong><%= successMessage %></strong>
-
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-    <% } %>
-
-    <% if (typeof errorMessage !== 'undefined' && errorMessage) { %>
-        <div class="alert alert-danger alert-dismissible fade show w-100 text-center mb-4 shadow-sm" role="alert">
-            <strong><%= errorMessage %></strong>
-
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-    <% } %>
-
-    <div id="dynamicErrorMessage" class="alert alert-danger alert-dismissible fade show w-100 text-center mb-4 shadow-sm d-none" role="alert" aria-live="assertive" ></div>
-        <strong id="dynamicErrorText"></strong>
-        <button type="button" class="close" id="closeDynamicError" aria-label="Close">
+    <div id="alertMessage" class="alert alert-dismissible fade show w-100 text-center mb-4 shadow-sm d-none" role="alert" aria-live="polite" >
+        <strong id="alertText"></strong>
+        <buttontype="button"class="close"id="closeAlert"aria-label="Close">
             <span aria-hidden="true">&times;</span>
         </button>
     </div>
+
+    <% if (typeof successMessage !== 'undefined' && successMessage) { %>
+        <script>
+            window.addEventListener("DOMContentLoaded", function() {
+                showAlertMessage("<%= successMessage %>", "success");
+            });
+        </script>
+    <% } %>
+
+    <% if (typeof errorMessage !== 'undefined' && errorMessage) { %>
+        <script>
+            window.addEventListener("DOMContentLoaded", function() {
+                showAlertMessage("<%= errorMessage %>", "error");
+            });
+        </script>
+    <% } %>
+    
 </div>

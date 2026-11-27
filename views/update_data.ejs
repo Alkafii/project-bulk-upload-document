@@ -443,9 +443,7 @@
                 if (replacements.some(function(fileInput) {
                     return deleteIds.includes(fileInput.dataset.id);
                 })) {
-                    showErrorMessage(
-                        "Dokumen yang sama tidak bisa dihapus dan diganti sekaligus."
-                    );
+                    showAlertMessage("Pesan error", "error");
 
                     return;
                 }
@@ -833,6 +831,39 @@
             }
 
             closeDynamicError.addEventListener("click", hideErrorMessage);
+
+
+            const alertMessage = document.getElementById("alertMessage");
+            const alertText = document.getElementById("alertText");
+            const closeAlert = document.getElementById("closeAlert");
+
+            function showAlertMessage(message, type) {
+                alertText.textContent = message;
+
+                alertMessage.classList.remove(
+                    "d-none",
+                    "alert-success",
+                    "alert-danger"
+                );
+
+                if (type === "success") {
+                    alertMessage.classList.add("alert-success");
+                } else {
+                    alertMessage.classList.add("alert-danger");
+                }
+
+                alertMessage.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center"
+                });
+            }
+
+            function hideAlertMessage() {
+                alertMessage.classList.add("d-none");
+                alertText.textContent = "";
+            }
+
+            closeAlert.addEventListener("click", hideAlertMessage);
         })();
     </script>
     
