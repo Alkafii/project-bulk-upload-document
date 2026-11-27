@@ -136,6 +136,7 @@
                             }) %>
 
                             <div id="newList" class="mt-4"></div>
+                            <%- include('./partials/document_list_item.ejs') %>
                         </div>
                     </div>
 
@@ -260,7 +261,7 @@
                             <button
                                 type="button"
                                 class="btn btn-sm btn-outline-danger">
-                                Hapus
+                                Delete
                             </button>
                         </div>
 
@@ -646,7 +647,7 @@
 
                 $("#reviewDocCount").text(reviewDocuments.length);
                 $("#reviewSize").text(fmt(totalSize));
-\
+
                 if (reviewDocuments.length === 0) {
                     const emptyItem = $("<li>")
                         .addClass("text-center text-muted p-4")
