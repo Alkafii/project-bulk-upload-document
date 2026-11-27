@@ -309,14 +309,6 @@
             input.addEventListener('change', () => addFiles(input.files));
             ['dragover', 'dragenter', 'dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.toggle('drag', ev.includes('er')); if (ev === 'drop') addFiles(e.dataTransfer.files); }));
 
-            // Event Delegation Ringkas untuk Input File Replace (Menggantikan loop querySelectorAll lama)
-            $(form).on('change', '.replacement-file', function() {
-                const hidden = this.parentElement.querySelector('input[type="hidden"]');
-                if (hidden) hidden.disabled = !this.files.length;
-                const label = this.parentElement.querySelector('.custom-file-label');
-                if (label) label.textContent = this.files.length ? this.files[0].name : "Choose file or drag here...";
-            });
-
             $(form).on("change", ".delete-doc", function() {
                 updateActionButtons();
             });
@@ -375,12 +367,12 @@
                     update.textContent = "Updating...";
 
                 } else if (action === "save") {
-
-                    // Save hanya memproses dokumen baru.
-                    // Hapus data Delete dan Replace dari FormData.
                     data.delete("deleteDocumentIds");
                     data.delete("replacementFiles");
                     data.delete("replacementDocumentIds");
+
+                    data.set("institutionName", originalInstitution);
+                    data.set("integrationType", originalIntegration);
 
                     for (const item of added) {
                         data.append(
@@ -623,13 +615,6 @@
                 submitUpdateData(currentAction);
             });
 
-            // Konfirmasi penambahan/pergantian dokumen
-            $("#confirmSubmitBtn").on("click", function () {
-                $("#reviewModal").modal("hide");
-
-                submitUpdateData();
-            });
-
             function renderMainPagePagination() {
                 const totalMainItems = $docItems.length, totalPages = Math.ceil(totalMainItems / mainItemsPerPage), $controls = $('#mainPaginationControls').empty();
                 if (totalMainItems === 0) return;
@@ -673,36 +658,6 @@
                         totalSize += item.file.size;
                     }
 
-                } else if (currentAction === "update") {
-
-                    // Hanya tampilkan dokumen pengganti
-                    for (const fileInput of currentReplacements) {
-
-                        if (fileInput.files.length > 0) {
-
-                            const file = fileInput.files[0];
-                            const docRow = fileInput.closest(".main-doc-item");
-
-                            let documentName = "Dokumen";
-
-                            if (docRow) {
-                                const nameElement = docRow.querySelector(".document-name");
-
-                                if (nameElement) {
-                                    documentName = nameElement.textContent.trim();
-                                }
-                            }
-
-                            reviewDocuments.push({
-                                name: documentName,
-                                fileName: file.name,
-                                size: file.size,
-                                type: "Penggantian Dokumen"
-                            });
-
-                            totalSize += file.size;
-                        }
-                    }
                 }
 
                 for (const fileInput of replacementInputs) {
